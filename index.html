@@ -6,6 +6,7 @@
         <title>FLO Studio</title>
         <link rel="stylesheet" href="style.css"/>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     </head>
     <body>
@@ -47,7 +48,6 @@
                     <p class="demo-creds-title">Demo logins</p>
                     <p>client@flo.mv · client123</p>
                     <p>instructor@flo.mv · instructor123</p>
-                    <p>admin@flo.mv · admin123</p>
                 </div>
             </div>
         </div>
@@ -2581,6 +2581,9 @@
                             <span class="sidebar-icon">⇄</span> Sub Requests
                             <span class="admin-badge" id="adminSubReqBadge">1</span>
                         </button>
+                        <button class="admin-sidebar-link" data-aview="website">
+                            <span class="sidebar-icon">✦</span> Website
+                        </button>
                         <button class="admin-sidebar-link" data-aview="config">
                             <span class="sidebar-icon">⚙</span> Config
                         </button>
@@ -2744,6 +2747,11 @@
                         </div>
                     </section>
 
+                    <!-- ── VIEW: WEBSITE (built by site-admin.js) ── -->
+                    <section class="portal-view" id="aview-website">
+                        <!-- Populated by site-admin.js when opened -->
+                    </section>
+
                     <!-- ── VIEW: CONFIG ── -->
                     <section class="portal-view" id="aview-config">
                         <div class="portal-view-header">
@@ -2810,6 +2818,9 @@
             </div>
         </div>
         <script src="data.js"></script>
+        <script src="site-config.js"></script>
+        <script src="site-content.js"></script>
+        <script src="site-admin.js"></script>
         <script>
             // ── DUMMY CREDENTIALS ──────────────────────────
             // These are placeholder logins. In a real app, this
@@ -2817,7 +2828,6 @@
             const USERS = {
             'client@flo.mv':     { password: 'client123',     role: 'client' },
             'instructor@flo.mv': { password: 'instructor123',  role: 'instructor' },
-            'admin@flo.mv':      { password: 'admin123',       role: 'admin' },
             };
 
             // ── ELEMENTS ───────────────────────────────────
@@ -2859,7 +2869,7 @@
             const demoCredentials = {
             client:     { email: 'client@flo.mv',     password: 'client123' },
             instructor: { email: 'instructor@flo.mv', password: 'instructor123' },
-            admin:      { email: 'admin@flo.mv',      password: 'admin123' }
+            admin:      { email: '',                  password: '' }
             };
 
             document.querySelectorAll('.role-tab').forEach(function(tab) {
@@ -2879,14 +2889,33 @@
             document.getElementById('loginPassword').value = demoCredentials.client.password;
 
             // ── LOGIN LOGIC ────────────────────────────────
-            loginSubmit.addEventListener('click', function() {
+            loginSubmit.addEventListener('click', async function() {
             const email    = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
-            const user     = USERS[email];
+            const activeTab = document.querySelector('.role-tab.active');
+            let user;
 
-            if (!user || user.password !== password) {
-                loginHint.textContent = 'Incorrect email or password.';
-                return;
+            if (activeTab && activeTab.dataset.role === 'admin') {
+                // Administrator sign-in is real (Supabase Auth), not a demo login.
+                if (!window.FLO || !FLO.adminLogin) {
+                    loginHint.textContent = 'The admin service did not load. Reload the page and try again.';
+                    return;
+                }
+                loginHint.textContent = 'Signing in…';
+                loginSubmit.disabled = true;
+                const result = await FLO.adminLogin(email, password);
+                loginSubmit.disabled = false;
+                if (!result.ok) {
+                    loginHint.textContent = result.message;
+                    return;
+                }
+                user = { role: 'admin' };
+            } else {
+                user = USERS[email];
+                if (!user || user.password !== password) {
+                    loginHint.textContent = 'Incorrect email or password.';
+                    return;
+                }
             }
 
             // Close modal
@@ -2916,7 +2945,9 @@
 
             // Change navbar login button to show who's in
             loginBtn.textContent = 'Logout';
-            loginBtn.onclick = function() { location.reload(); }; // reload to "log out"
+            loginBtn.onclick = function() {   // sign out (admin session too), then reload
+                (window.FLO && FLO.signOut ? FLO.signOut() : Promise.resolve()).then(function() { location.reload(); });
+            };
             });
 
                         // ── CLIENT PORTAL SIDEBAR NAVIGATION ───────────
@@ -3780,7 +3811,7 @@
 
             // ── ADMIN LOGOUT ────────────────────────────────
             document.getElementById('adminLogout').addEventListener('click', function() {
-                location.reload();
+                (window.FLO && FLO.signOut ? FLO.signOut() : Promise.resolve()).then(function() { location.reload(); });
             });
 
             // ── DASHBOARD STATS (live counts from data.js) ──

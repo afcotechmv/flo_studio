@@ -5856,3 +5856,168 @@ body {
     .btn-queue-approve,
     .btn-queue-decline { text-align: center; }
 }
+
+
+/* ═══════════════════════════════════════════════════════════
+   WEBSITE EDITOR (admin) + SECTION VISIBILITY
+   Kept at the very end of the stylesheet so these rules, and the
+   mobile block below, are not overridden by earlier portal CSS.
+   ═══════════════════════════════════════════════════════════ */
+.site-hidden { display: none !important; }
+
+.wsite-tabs { flex-wrap: wrap; }
+.admin-audience-tab.is-pending { opacity: 0.6; }
+.admin-audience-tab.is-pending.active { opacity: 1; }
+
+.wsite-card { max-width: 1100px; }
+
+.wsite-banner {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: var(--tangerine-light);
+    border: 1px solid var(--tangerine);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-dark);
+}
+
+.wsite-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 32px;
+    margin-top: 20px;
+}
+
+.wsite-field { margin-bottom: 18px; }
+.wsite-label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+.wsite-hint {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 6px;
+    line-height: 1.5;
+}
+.wsite-form .admin-panel-input {
+    width: 100%;
+    display: block;
+    font-family: 'Georgia', serif;
+}
+.wsite-form textarea.admin-panel-input { resize: vertical; line-height: 1.5; }
+.wsite-two {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+}
+
+.wsite-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.wsite-upload { display: inline-block; cursor: pointer; }
+.wsite-thumb {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    height: 120px;
+    object-fit: cover;
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.wsite-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: 'Georgia', serif;
+    font-size: 13px;
+    color: var(--text-mid);
+    text-decoration: underline;
+    cursor: pointer;
+}
+.wsite-link-btn:hover { color: var(--tangerine); }
+
+.wsite-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+    padding-top: 18px;
+    border-top: 1px solid #e8e8e4;
+}
+.wsite-status { font-size: 13px; color: var(--text-mid); }
+.wsite-status--ok { color: var(--teal-dark); }
+.wsite-status--err { color: var(--tangerine); }
+.wsite-status--busy { color: var(--text-light); }
+
+/* Hero preview (scaled-down copy of the real hero) */
+.wsite-hero-preview {
+    background-color: var(--teal-light);
+    border: 1px solid #e8e8e4;
+    border-bottom: 4px solid var(--tangerine);
+    border-radius: 6px;
+    padding: 28px 24px;
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+.wsite-hero-preview .hero-tagline { font-size: 9px; letter-spacing: 2px; margin-bottom: 12px; }
+.wsite-hero-preview .hero-title { font-size: 28px; margin-bottom: 12px; }
+.wsite-hero-preview .hero-sub { font-size: 12px; margin-bottom: 18px; line-height: 1.6; }
+.wsite-hero-preview .btn { font-size: 12px; padding: 8px 16px; pointer-events: none; }
+
+/* Page order list */
+.wsite-order-list { list-style: none; margin: 18px 0 8px; padding: 0; max-width: 640px; }
+.wsite-order-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    background: #fff;
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+.wsite-order-row--fixed { background: #f6f6f3; color: var(--text-light); }
+.wsite-order-num {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    font-size: 12px;
+}
+.wsite-order-row--fixed .wsite-order-num { background: #ecece8; color: var(--text-light); }
+.wsite-order-label { flex: 1; font-size: 14px; }
+.wsite-visible { font-size: 13px; color: var(--text-mid); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.wsite-order-btns { display: flex; gap: 6px; }
+.wsite-move {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    background: #fff;
+    color: var(--text-dark);
+    font-size: 11px;
+    cursor: pointer;
+}
+.wsite-move:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+.wsite-move:disabled { opacity: 0.35; cursor: not-allowed; }
+.wsite-reset { margin-top: 14px; }
+
+@media (max-width: 768px) {
+    .wsite-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .wsite-two { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .wsite-order-row { flex-wrap: wrap; gap: 10px; }
+    .wsite-order-label { flex-basis: calc(100% - 50px); }
+    .wsite-actions { gap: 12px; }
+    .wsite-hero-preview { min-height: 200px; padding: 20px 16px; }
+    .wsite-hero-preview .hero-title { font-size: 22px; }
+}
