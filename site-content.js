@@ -26,7 +26,8 @@
   // nav: navbar link (if any) that points at the section.
   FLO.SECTIONS = [
     { key: 'hero',        label: 'Hero & event banner', els: ['.hero', '.event-banner'] },
-    { key: 'classes',     label: 'Classes & FLO Kids',  els: ['#classes'],     nav: '#classes' },
+    { key: 'classes',     label: 'Classes',             els: ['#classes'],     nav: '#classes' },
+    { key: 'kids',        label: 'FLO Kids',            els: ['#kids'] },
     { key: 'about',       label: 'Our Story',           els: ['#about'],       nav: '#about' },
     { key: 'instructors', label: 'The Team',            els: ['#instructors'] },
     { key: 'workshops',   label: 'Workshops & Events',  els: ['#workshops'] }
@@ -35,7 +36,7 @@
   /* ── Defaults (identical to the original hard-coded page) ── */
   FLO.DEFAULTS = {
     version: 1,
-    order: ['hero', 'classes', 'about', 'instructors', 'workshops'],
+    order: ['hero', 'classes', 'kids', 'about', 'instructors', 'workshops'],
     hidden: {},
     hero: {
       tagline: 'Feel \u00B7 Look \u00B7 Own \u00B7 Mal\u00E9, Maldives',
@@ -355,6 +356,73 @@
           "hidden": false
         }
       ]
+    },
+    kids: {
+      "header": {
+        "label": "For little ones",
+        "title": "FLO Kids",
+        "sub": "Introducing girls aged 5–12 to movement, confidence,\nand the joy of being in their body."
+      },
+      "cards": [
+        {
+          "id": "kids-fly",
+          "icon": "images/class-icons/fly.png",
+          "name": "Fly",
+          "type": "Aerial for Girls",
+          "desc": "A fun, safe introduction to aerial movement using hammocks. Builds strength, confidence, and coordination in a playful environment.",
+          "price": "MVR 1,000",
+          "meta": [
+            "Ages 5–12",
+            "Hammock provided",
+            "Beginners welcome"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Sat · 9:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Sun · 10:00 AM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "kids-fusion",
+          "icon": "images/class-icons/fusion.png",
+          "name": "Fusion",
+          "type": "Ballet & Aerial",
+          "desc": "A blend of classical ballet and aerial movement designed to build grace, posture, flexibility, and fearlessness in young girls.",
+          "price": "MVR 1,000",
+          "meta": [
+            "Ages 5–12",
+            "Equipment provided",
+            "All levels"
+          ],
+          "slotsLabel": "No slots available",
+          "slots": [
+            {
+              "text": "Sat · 11:00 AM · Full",
+              "status": "full"
+            },
+            {
+              "text": "Sun · 12:00 PM · Full",
+              "status": "full"
+            }
+          ],
+          "buttonLabel": "Join Waitlist",
+          "buttonLink": "#",
+          "waitlist": true,
+          "highlight": false,
+          "hidden": false
+        }
+      ]
     }
   };
 
@@ -365,7 +433,18 @@
     (Array.isArray(stored) ? stored : []).forEach(function (k) {
       if (known.indexOf(k) !== -1 && out.indexOf(k) === -1) out.push(k);
     });
-    known.forEach(function (k) { if (out.indexOf(k) === -1) out.push(k); });
+    // A section added after a layout was saved goes right after the section
+    // that precedes it in the default order (e.g. FLO Kids follows Classes).
+    var defaults = FLO.DEFAULTS.order;
+    known.forEach(function (k) {
+      if (out.indexOf(k) !== -1) return;
+      var at = out.length;
+      for (var i = defaults.indexOf(k) - 1; i >= 0; i--) {
+        var pos = out.indexOf(defaults[i]);
+        if (pos !== -1) { at = pos + 1; break; }
+      }
+      out.splice(at, 0, k);
+    });
     return out;
   }
 
@@ -403,7 +482,8 @@
       if (typeof h.backgroundImage === 'string') dh.backgroundImage = h.backgroundImage;
       dh.imageFade = clamp01(h.imageFade, dh.imageFade);
     }
-    mergeClasses(stored, d);
+    mergeCollection(stored, d, 'classes');
+    mergeCollection(stored, d, 'kids');
     return d;
   };
 
@@ -443,17 +523,19 @@
     };
   }
 
-  function mergeClasses(stored, d) {
-    var sc = stored.classes;
+  // Classes and FLO Kids share one shape: a heading plus a list of cards.
+  function mergeCollection(stored, d, key) {
+    var sc = stored[key];
     if (!sc || typeof sc !== 'object') return;
+    var target = d[key];
     if (sc.header && typeof sc.header === 'object') {
-      d.classes.header.label = str(sc.header.label, 80, d.classes.header.label);
-      d.classes.header.title = str(sc.header.title, 120, d.classes.header.title);
-      d.classes.header.sub = str(sc.header.sub, 300, d.classes.header.sub);
+      target.header.label = str(sc.header.label, 80, target.header.label);
+      target.header.title = str(sc.header.title, 120, target.header.title);
+      target.header.sub = str(sc.header.sub, 300, target.header.sub);
     }
     if (Array.isArray(sc.cards)) {
       var seen = {};
-      d.classes.cards = sc.cards.map(mergeCard).filter(function (c) {
+      target.cards = sc.cards.map(mergeCard).filter(function (c) {
         if (!c || seen[c.id]) return false;
         seen[c.id] = true;
         return true;
@@ -513,7 +595,9 @@
       (c.slots || []).forEach(function (s) {
         // Available slots on a highlighted (tangerine) card use the light style.
         var cls = s.status === 'full' ? 'full' : 'available' + (c.highlight ? ' slot-light' : '');
-        hover += '<div class="slot ' + cls + '">' + esc(s.text) + '</div>';
+        // The trailing newline matters: browsers render the whitespace between
+        // inline chips as a small gap, exactly as the original hand-written markup did.
+        hover += '<div class="slot ' + cls + '">' + esc(s.text) + '</div>\n';
       });
       hover += '</div>';
     }
@@ -533,6 +617,40 @@
         '</div>' +
       '</div>' +
     '</div>';
+  };
+
+  /* ── FLO Kids card rendering ────────────────────────── */
+  FLO.kidsCardHTML = function (c) {
+    var esc = FLO.esc;
+    var icon = FLO.safeImageUrl(c.icon);
+    var iconHTML = icon
+      ? '<img src="' + esc(icon) + '" alt="' + esc(c.name) + '" class="kids-icon-img" />'
+      : '<span class="kids-icon-ph" aria-hidden="true">' + esc((c.name || '?').charAt(0).toUpperCase()) + '</span>';
+
+    var html = '<div class="kids-card">' +
+      '<div class="kids-icon">' + iconHTML + '</div>' +
+      '<div class="kids-content">' +
+        '<h3>' + esc(c.name) + '</h3>' +
+        (c.type ? '<p class="kids-type">' + esc(c.type) + '</p>' : '') +
+        (c.desc ? '<p class="kids-desc">' + esc(c.desc) + '</p>' : '');
+    if (c.meta && c.meta.length) {
+      html += '<div class="kids-meta">' +
+        c.meta.map(function (t) { return '<span class="kids-tag">' + esc(t) + '</span>'; }).join('') + '</div>';
+    }
+    if (c.price) html += '<p class="kids-price">' + esc(c.price) + '</p>';
+    if ((c.slots && c.slots.length) || c.slotsLabel) {
+      html += '<div class="class-slots">';
+      if (c.slotsLabel) html += '<p class="slots-label">' + esc(c.slotsLabel) + '</p>';
+      (c.slots || []).forEach(function (s) {
+        html += '<div class="slot ' + (s.status === 'full' ? 'full' : 'available') + '">' + esc(s.text) + '</div>\n';
+      });
+      html += '</div>';
+    }
+    if (c.buttonLabel) {
+      html += '<a href="' + esc(FLO.safeHref(c.buttonLink)) + '" class="btn btn-card' +
+        (c.waitlist ? ' btn-waitlist' : '') + '" style="margin-top:16px;">' + esc(c.buttonLabel) + '</a>';
+    }
+    return html + '</div></div>';
   };
 
   /* ── Apply to the page ──────────────────────────────── */
@@ -595,11 +713,34 @@
     }
   }
 
+  function applyKids(w) {
+    var sec = document.querySelector('#kids');
+    if (!sec) return;
+    var hdr = sec.querySelector('.kids-header');
+    if (hdr) {
+      var h = w.kids.header;
+      var label = hdr.querySelector('.section-label');
+      var title = hdr.querySelector('.section-title');
+      var sub = hdr.querySelector('.section-sub');
+      if (label) label.textContent = h.label;
+      if (title) title.textContent = h.title;
+      if (sub) sub.innerHTML = FLO.esc(h.sub).replace(/\r?\n/g, '<br>');
+    }
+    var grid = sec.querySelector('.kids-grid');
+    if (grid) {
+      grid.innerHTML = w.kids.cards
+        .filter(function (c) { return !c.hidden; })
+        .map(FLO.kidsCardHTML)
+        .join('');
+    }
+  }
+
   FLO.applyWebsite = function (w) {
     try {
       applyOrderAndVisibility(w);
       applyHero(w);
       applyClasses(w);
+      applyKids(w);
     } catch (err) {
       console.error('FLO: could not apply website content.', err);
     }

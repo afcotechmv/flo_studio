@@ -6129,6 +6129,34 @@ body {
 .wsite-class-preview .class-card { pointer-events: none; }
 .wsite-class-preview .card-hover-info { opacity: 1; transform: none; }
 
+/* FLO Kids as its own section.
+   The dashed divider and spacing of .flo-kids are unchanged; the section only
+   supplies the side padding and bottom space that .classes used to provide. */
+.kids-section {
+    padding: 0 60px 100px;
+    background-color: var(--white);
+}
+/* When Kids directly follows Classes, close up the Classes bottom spacing so the
+   pair looks exactly as it did when they were one section. */
+.classes:has(+ .kids-section) { padding-bottom: 0; }
+.classes:has(+ .kids-section) .classes-grid { margin-bottom: 0; }
+
+/* FLO Kids editor */
+.kids-icon-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--tangerine);
+    font-size: 22px;
+}
+.wsite-kids-preview { max-width: 460px; }
+.wsite-kids-preview .kids-card { pointer-events: none; }
+.wsite-three textarea.admin-panel-input { resize: vertical; line-height: 1.5; }
+
 @media (max-width: 768px) {
     .wsite-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .wsite-two { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -6143,4 +6171,5 @@ body {
     .wsite-crow-btns { width: 100%; justify-content: flex-start; }
     .wsite-slot-row { flex-wrap: wrap; }
     .wsite-link-btn--danger { margin-left: 0; }
+    .kids-section { padding: 0 24px 60px; }
 }

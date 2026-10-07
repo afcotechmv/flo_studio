@@ -3,7 +3,7 @@
    The "Website" area of the admin portal. Lets the signed-in
    administrator edit what visitors see on the public site.
 
-   Built so far: Hero, Classes, Page Order.
+   Built so far: Hero, Classes, FLO Kids, Page Order.
    The other tabs are listed so the final structure is visible;
    each is switched on in a later stage.
 
@@ -20,7 +20,7 @@
   var TABS = [
     { key: 'hero',   label: 'Hero',                built: true },
     { key: 'classes', label: 'Classes',             built: true },
-    { key: 'kids',   label: 'FLO Kids' },
+    { key: 'kids',   label: 'FLO Kids',            built: true },
     { key: 'story',  label: 'Our Story' },
     { key: 'team',   label: 'The Team' },
     { key: 'events', label: 'Workshops & Events' },
@@ -87,7 +87,7 @@
     dirty = false;
     markTabs();
     if (key === 'hero') return renderHero();
-    if (key === 'classes') return renderClasses();
+    if (key === 'classes' || key === 'kids') return renderClasses();
     if (key === 'order') return renderOrder();
     renderPending(key);
   }
@@ -278,20 +278,48 @@
   /* ── Classes editor ─────────────────────────────────── */
   var MAX_CARDS = 24;
 
+  // Classes and FLO Kids are edited by the same screens; this table holds
+  // what differs between them.
+  var COLL = {
+    classes: {
+      key: 'classes', folder: 'classes', previewClass: 'wsite-class-preview',
+      render: function (c) { return FLO.classCardHTML(c); },
+      noun: 'class', title: 'Classes', nameLabel: 'Class name',
+      desc: 'The class cards shown under \u201CWhat we offer\u201D on the public page. ' +
+            'These are the marketing cards; the booking schedule is managed separately under Classes in the main menu.',
+      metaLabel: 'Hover details', metaHint: 'One per line (up to 8).',
+      previewHint: 'Shown as it appears when a visitor hovers over the card.',
+      hasHighlight: true,
+      fresh: { name: 'New class', price: 'MVR 1,000', meta: ['50 min session'] }
+    },
+    kids: {
+      key: 'kids', folder: 'kids', previewClass: 'wsite-kids-preview',
+      render: function (c) { return FLO.kidsCardHTML(c); },
+      noun: 'kids class', title: 'FLO Kids', nameLabel: 'Class name',
+      desc: 'The FLO Kids section of the public page: its heading and the cards for girls aged 5\u201312.',
+      metaLabel: 'Tags', metaHint: 'Small pill labels, one per line (up to 8), e.g. Ages 5\u201312.',
+      previewHint: 'Shown as it appears on the public page.',
+      hasHighlight: false,
+      fresh: { name: 'New kids class', price: 'MVR 1,000', meta: ['Ages 5\u201312'] }
+    }
+  };
+  function cfg() { return COLL[activeTab]; }
+
   function newCard() {
+    var f = cfg().fresh;
     return {
-      id: FLO.newId('c'), icon: '', name: 'New class', type: '', desc: '', price: 'MVR 1,000',
-      meta: ['50 min session'], slotsLabel: 'Available slots', slots: [],
+      id: FLO.newId('c'), icon: '', name: f.name, type: '', desc: '', price: f.price,
+      meta: f.meta.slice(), slotsLabel: 'Available slots', slots: [],
       buttonLabel: 'Join Class', buttonLink: '#', waitlist: false, highlight: false, hidden: false
     };
   }
 
   function ensureClassesDraft() {
-    if (!draft || draft.__tab !== 'classes') {
+    if (!draft || draft.__tab !== activeTab) {
       draft = {
-        __tab: 'classes', view: 'list', editId: null,
-        header: FLO.clone(FLO.website.classes.header),
-        cards: FLO.clone(FLO.website.classes.cards)
+        __tab: activeTab, view: 'list', editId: null,
+        header: FLO.clone(FLO.website[cfg().key].header),
+        cards: FLO.clone(FLO.website[cfg().key].cards)
       };
     }
   }
@@ -320,7 +348,7 @@
     var rows = draft.cards.map(function (c, i) {
       var last = i === draft.cards.length - 1;
       var badges =
-        (c.highlight ? '<span class="wsite-badge wsite-badge--accent">Highlighted</span>' : '') +
+        (cfg().hasHighlight && c.highlight ? '<span class="wsite-badge wsite-badge--accent">Highlighted</span>' : '') +
         (c.waitlist ? '<span class="wsite-badge">Waitlist button</span>' : '') +
         (c.hidden ? '<span class="wsite-badge">Hidden</span>' : '');
       return '<li class="wsite-crow' + (c.hidden ? ' is-hidden' : '') + '" data-id="' + esc(c.id) + '">' +
@@ -342,24 +370,23 @@
 
     panel.innerHTML =
       '<div class="portal-section wsite-card">' +
-        '<h3 class="portal-section-title">Classes</h3>' +
-        '<p class="portal-section-desc">The class cards shown under \u201CWhat we offer\u201D on the public page. ' +
-        'These are the marketing cards; the booking schedule is managed separately under Classes in the main menu.</p>' +
+        '<h3 class="portal-section-title">' + esc(cfg().title) + '</h3>' +
+        '<p class="portal-section-desc">' + esc(cfg().desc) + '</p>' +
 
         '<h4 class="wsite-subhead">Section heading</h4>' +
         '<div class="wsite-three">' +
-          field('Small label', '', '<input type="text" class="admin-panel-input" id="wc-label" maxlength="80" value="' + esc(h.label) + '">') +
-          field('Title', '', '<input type="text" class="admin-panel-input" id="wc-title" maxlength="120" value="' + esc(h.title) + '">') +
-          field('Sub-text', '', '<input type="text" class="admin-panel-input" id="wc-sub" maxlength="300" value="' + esc(h.sub) + '">') +
+          field('Small label', 'Small text above the title.', '<input type="text" class="admin-panel-input" id="wc-label" maxlength="80" value="' + esc(h.label) + '">') +
+          field('Title', 'The main heading.', '<input type="text" class="admin-panel-input" id="wc-title" maxlength="120" value="' + esc(h.title) + '">') +
+          field('Sub-text', 'Line breaks are kept.', '<textarea class="admin-panel-input" id="wc-sub" rows="2" maxlength="300">' + esc(h.sub) + '</textarea>') +
         '</div>' +
 
         '<div class="wsite-subhead-row">' +
-          '<h4 class="wsite-subhead">Class cards (' + draft.cards.length + ')</h4>' +
-          '<button type="button" class="btn-admin-add" id="wc-add"' + (draft.cards.length >= MAX_CARDS ? ' disabled' : '') + '>+ Add class</button>' +
+          '<h4 class="wsite-subhead">Cards (' + draft.cards.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" id="wc-add"' + (draft.cards.length >= MAX_CARDS ? ' disabled' : '') + '>+ Add ' + esc(cfg().noun) + '</button>' +
         '</div>' +
         (rows
           ? '<ul class="wsite-clist">' + rows + '</ul>'
-          : '<p class="admin-empty-note">No class cards yet. Use \u201CAdd class\u201D to create one.</p>') +
+          : '<p class="admin-empty-note">No cards yet. Use \u201CAdd ' + esc(cfg().noun) + '\u201D to create one.</p>') +
         actions('wc') +
       '</div>';
 
@@ -454,12 +481,12 @@
 
     panel.innerHTML =
       '<div class="portal-section wsite-card">' +
-        '<p class="wsite-back"><button type="button" class="wsite-link-btn" id="wce-back">\u2190 Back to all classes</button></p>' +
-        '<h3 class="portal-section-title">Edit class</h3>' +
+        '<p class="wsite-back"><button type="button" class="wsite-link-btn" id="wce-back">\u2190 Back to ' + esc(cfg().title) + '</button></p>' +
+        '<h3 class="portal-section-title">Edit ' + esc(cfg().noun) + '</h3>' +
         '<div class="wsite-grid">' +
           '<div class="wsite-form">' +
             '<div class="wsite-two">' +
-              field('Class name', '', '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(c.name) + '">') +
+              field(cfg().nameLabel, '', '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(c.name) + '">') +
               field('Style', 'Shown in small capitals, e.g. Vinyasa Yoga.', '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(c.type) + '">') +
             '</div>' +
             field('Description', '', '<textarea class="admin-panel-input" id="wce-desc" rows="3" maxlength="400">' + esc(c.desc) + '</textarea>') +
@@ -477,8 +504,8 @@
             '</div>' +
 
             '<div class="wsite-two">' +
-              field('Price', 'Shown when the card is hovered.', '<input type="text" class="admin-panel-input" id="wce-price" maxlength="40" value="' + esc(c.price) + '">') +
-              field('Hover details', 'One per line (up to 8).', '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc(c.meta.join('\n')) + '</textarea>') +
+              field('Price', activeTab === 'classes' ? 'Shown when the card is hovered.' : '', '<input type="text" class="admin-panel-input" id="wce-price" maxlength="40" value="' + esc(c.price) + '">') +
+              field(cfg().metaLabel, cfg().metaHint, '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc(c.meta.join('\n')) + '</textarea>') +
             '</div>' +
 
             '<div class="wsite-field">' +
@@ -496,22 +523,24 @@
 
             '<div class="wsite-checks">' +
               '<label><input type="checkbox" id="wce-waitlist"' + (c.waitlist ? ' checked' : '') + '> Style the button as a waitlist button</label>' +
-              '<label><input type="checkbox" id="wce-highlight"' + (c.highlight ? ' checked' : '') + '> Highlight this card (tangerine, white icon)</label>' +
-              '<label><input type="checkbox" id="wce-hidden"' + (c.hidden ? ' checked' : '') + '> Hide this class from the public page</label>' +
+              (cfg().hasHighlight
+                ? '<label><input type="checkbox" id="wce-highlight"' + (c.highlight ? ' checked' : '') + '> Highlight this card (tangerine, white icon)</label>'
+                : '') +
+              '<label><input type="checkbox" id="wce-hidden"' + (c.hidden ? ' checked' : '') + '> Hide this ' + esc(cfg().noun) + ' from the public page</label>' +
             '</div>' +
           '</div>' +
 
           '<div class="wsite-preview-wrap">' +
             '<p class="wsite-label">Preview</p>' +
-            '<p class="wsite-hint">Shown as it appears when a visitor hovers over the card.</p>' +
-            '<div class="wsite-class-preview" id="wce-preview"></div>' +
+            '<p class="wsite-hint">' + esc(cfg().previewHint) + '</p>' +
+            '<div class="' + cfg().previewClass + '" id="wce-preview"></div>' +
           '</div>' +
         '</div>' +
 
         '<div class="wsite-actions">' +
           '<button type="button" class="btn-admin-primary" id="wce-save">Save changes</button>' +
-          '<button type="button" class="wsite-link-btn" id="wce-done">Back to all classes</button>' +
-          '<button type="button" class="wsite-link-btn wsite-link-btn--danger" id="wce-delete">Delete this class</button>' +
+          '<button type="button" class="wsite-link-btn" id="wce-done">Back to ' + esc(cfg().title) + '</button>' +
+          '<button type="button" class="wsite-link-btn wsite-link-btn--danger" id="wce-delete">Delete this ' + esc(cfg().noun) + '</button>' +
           '<span class="wsite-status" id="wce-status" role="status"></span>' +
         '</div>' +
       '</div>';
@@ -522,7 +551,7 @@
 
   function updateClassPreview(c) {
     var box = panel.querySelector('#wce-preview');
-    if (box) box.innerHTML = FLO.classCardHTML(classPreviewCard(c));
+    if (box) box.innerHTML = cfg().render(classPreviewCard(c));
   }
 
   function wireClassEditor(c) {
@@ -541,7 +570,8 @@
     bind('#wce-btn', function (v) { c.buttonLabel = v; });
     bind('#wce-link', function (v) { c.buttonLink = v; });
     panel.querySelector('#wce-waitlist').addEventListener('change', function (e) { c.waitlist = e.target.checked; touch(); });
-    panel.querySelector('#wce-highlight').addEventListener('change', function (e) { c.highlight = e.target.checked; touch(); });
+    var hl = panel.querySelector('#wce-highlight');
+    if (hl) hl.addEventListener('change', function (e) { c.highlight = e.target.checked; touch(); });
     panel.querySelector('#wce-hidden').addEventListener('change', function (e) { c.hidden = e.target.checked; touch(); });
 
     // Slots
@@ -577,7 +607,7 @@
       var file = e.target.files && e.target.files[0];
       if (!file) return;
       setStatus(statusEl, 'Uploading icon\u2026', 'busy');
-      var res = await FLO.uploadImage(file, 'classes', { maxDim: 512, quality: 0.9 });
+      var res = await FLO.uploadImage(file, cfg().folder, { maxDim: 512, quality: 0.9 });
       if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
       c.icon = res.url;
       dirty = true;
@@ -605,7 +635,7 @@
     for (var i = 0; i < draft.cards.length; i++) {
       var c = draft.cards[i];
       if (!String(c.name || '').trim()) {
-        setStatus(statusEl, 'Every class needs a name (card ' + (i + 1) + ').', 'err');
+        setStatus(statusEl, 'Every card needs a name (card ' + (i + 1) + ').', 'err');
         return;
       }
       var link = String(c.buttonLink || '').trim();
@@ -620,13 +650,13 @@
         meta: c.meta, slotsLabel: c.slotsLabel.trim(),
         slots: c.slots.map(function (s) { return { text: s.text.trim(), status: s.status }; }).filter(function (s) { return s.text; }),
         buttonLabel: c.buttonLabel.trim(), buttonLink: String(c.buttonLink || '').trim() || '#',
-        waitlist: c.waitlist, highlight: c.highlight, hidden: c.hidden
+        waitlist: c.waitlist, highlight: cfg().hasHighlight && c.highlight, hidden: c.hidden
       };
     });
     btn.disabled = true;
     setStatus(statusEl, 'Saving\u2026', 'busy');
     var next = FLO.clone(FLO.website);
-    next.classes = {
+    next[cfg().key] = {
       header: { label: draft.header.label.trim(), title: draft.header.title.trim(), sub: draft.header.sub.trim() },
       cards: cards
     };
