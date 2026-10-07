@@ -45,6 +45,316 @@
       buttonLink: '#classes',
       backgroundImage: '',
       imageFade: 0.55
+    },
+    classes: {
+      "header": {
+        "label": "What we offer",
+        "title": "Find your flow.",
+        "sub": "Nine ways to move, breathe, and grow — at your own pace."
+      },
+      "cards": [
+        {
+          "id": "class-flow",
+          "icon": "images/class-icons/flow.png",
+          "name": "Flow",
+          "type": "Vinyasa Yoga",
+          "desc": "Movement, breath, flexibility, and balance. A continuous flow that connects body and mind.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "All levels welcome",
+            "Mats provided"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Sun · 6:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Mon · 7:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Wed · 5:30 PM",
+              "status": "available"
+            },
+            {
+              "text": "Thu · 6:30 PM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "class-pulse",
+          "icon": "images/class-icons/pulse.png",
+          "name": "Pulse",
+          "type": "Barre",
+          "desc": "Ballet and yoga-inspired movements to tone, strengthen, and improve posture.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "All levels welcome",
+            "Equipment provided"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Sun · 8:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Tue · 6:00 PM",
+              "status": "full"
+            },
+            {
+              "text": "Thu · 8:00 AM",
+              "status": "full"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": true,
+          "hidden": false
+        },
+        {
+          "id": "class-soar",
+          "icon": "images/class-icons/soar.png",
+          "name": "Soar",
+          "type": "Aerial Hammock",
+          "desc": "Deep stretching, strength, and decompression — suspended in the air with confidence.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "Beginners welcome",
+            "Hammock provided"
+          ],
+          "slotsLabel": "No slots available",
+          "slots": [
+            {
+              "text": "Sun · 9:00 AM · Full",
+              "status": "full"
+            },
+            {
+              "text": "Tue · 5:00 PM · Full",
+              "status": "full"
+            },
+            {
+              "text": "Thu · 9:00 AM · Full",
+              "status": "full"
+            }
+          ],
+          "buttonLabel": "Join Waitlist",
+          "buttonLink": "#",
+          "waitlist": true,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "class-sculpt",
+          "icon": "images/class-icons/sculpt.png",
+          "name": "Sculpt",
+          "type": "Mat Pilates",
+          "desc": "Correct posture, strengthen the core, and improve body alignment on the mat.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "All levels welcome",
+            "Mats provided"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Mon · 9:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Wed · 7:00 AM",
+              "status": "full"
+            },
+            {
+              "text": "Fri · 6:00 PM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "class-reform",
+          "icon": "images/class-icons/reform.png",
+          "name": "Reform",
+          "type": "Reformer Pilates",
+          "desc": "Build strength, control, and alignment using a reformer bed.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "All levels welcome",
+            "Reformer bed included"
+          ],
+          "slotsLabel": "No slots available",
+          "slots": [
+            {
+              "text": "Mon · 6:00 AM · Full",
+              "status": "full"
+            },
+            {
+              "text": "Wed · 6:00 AM · Full",
+              "status": "full"
+            },
+            {
+              "text": "Fri · 7:00 AM · Full",
+              "status": "full"
+            },
+            {
+              "text": "Sun · 5:30 PM · Full",
+              "status": "full"
+            }
+          ],
+          "buttonLabel": "Join Waitlist",
+          "buttonLink": "#",
+          "waitlist": true,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "class-reboot",
+          "icon": "images/class-icons/reboot.png",
+          "name": "ReBoot",
+          "type": "Indoor Bootcamp",
+          "desc": "High-intensity workout targeted for weight loss and stamina. Push your limits.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "Intermediate level",
+            "Equipment provided"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Tue · 6:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Thu · 6:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Sat · 7:00 AM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": true,
+          "hidden": false
+        },
+        {
+          "id": "class-transform",
+          "icon": "images/class-icons/transform.png",
+          "name": "Transform",
+          "type": "Cadillac Pilates",
+          "desc": "Strength, resistance, posture correction, and alignment on a reformer with tower.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "Intermediate level",
+            "Cadillac bed included"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Tue · 9:00 AM",
+              "status": "full"
+            },
+            {
+              "text": "Thu · 5:30 PM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "class-connect",
+          "icon": "images/class-icons/connect.png",
+          "name": "Connect",
+          "type": "Partner Stretch",
+          "desc": "Thai yoga bodywork and partner yoga for deep tissue stretch, flexibility, and relaxation.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "Bring a partner",
+            "Props provided"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Wed · 6:00 PM",
+              "status": "available"
+            },
+            {
+              "text": "Fri · 5:00 PM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": false,
+          "hidden": false
+        },
+        {
+          "id": "class-reset",
+          "icon": "images/class-icons/reset.png",
+          "name": "Reset",
+          "type": "Meditation & Breathwork",
+          "desc": "Calm and relax the mind and body through meditation and breathing practices.",
+          "price": "MVR 1,000",
+          "meta": [
+            "50 min session",
+            "All levels welcome",
+            "Mats provided"
+          ],
+          "slotsLabel": "Available slots",
+          "slots": [
+            {
+              "text": "Sun · 7:00 AM",
+              "status": "available"
+            },
+            {
+              "text": "Mon · 8:00 PM",
+              "status": "available"
+            },
+            {
+              "text": "Wed · 8:00 PM",
+              "status": "available"
+            },
+            {
+              "text": "Fri · 8:00 AM",
+              "status": "available"
+            }
+          ],
+          "buttonLabel": "Join Class",
+          "buttonLink": "#",
+          "waitlist": false,
+          "highlight": false,
+          "hidden": false
+        }
+      ]
     }
   };
 
@@ -93,8 +403,63 @@
       if (typeof h.backgroundImage === 'string') dh.backgroundImage = h.backgroundImage;
       dh.imageFade = clamp01(h.imageFade, dh.imageFade);
     }
+    mergeClasses(stored, d);
     return d;
   };
+
+  /* ── Classes: merge / validate ──────────────────────── */
+  function str(v, max, fallback) {
+    return typeof v === 'string' ? v.slice(0, max) : fallback;
+  }
+  function list(v) { return Array.isArray(v) ? v : []; }
+
+  FLO.newId = function (prefix) {
+    return (prefix || 'x') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  };
+
+  function mergeCard(c) {
+    if (!c || typeof c !== 'object') return null;
+    var name = str(c.name, 60, '').trim();
+    if (!name) return null;
+    return {
+      id: str(c.id, 40, '') || FLO.newId('c'),
+      icon: str(c.icon, 400, ''),
+      name: name,
+      type: str(c.type, 80, ''),
+      desc: str(c.desc, 400, ''),
+      price: str(c.price, 40, ''),
+      meta: list(c.meta).map(function (m) { return String(m == null ? '' : m).trim().slice(0, 80); })
+                        .filter(Boolean).slice(0, 8),
+      slotsLabel: str(c.slotsLabel, 60, ''),
+      slots: list(c.slots).map(function (s) {
+        return { text: String(s && s.text != null ? s.text : '').trim().slice(0, 60),
+                 status: s && s.status === 'full' ? 'full' : 'available' };
+      }).filter(function (s) { return s.text; }).slice(0, 12),
+      buttonLabel: str(c.buttonLabel, 40, ''),
+      buttonLink: str(c.buttonLink, 300, '#') || '#',
+      waitlist: c.waitlist === true,
+      highlight: c.highlight === true,
+      hidden: c.hidden === true
+    };
+  }
+
+  function mergeClasses(stored, d) {
+    var sc = stored.classes;
+    if (!sc || typeof sc !== 'object') return;
+    if (sc.header && typeof sc.header === 'object') {
+      d.classes.header.label = str(sc.header.label, 80, d.classes.header.label);
+      d.classes.header.title = str(sc.header.title, 120, d.classes.header.title);
+      d.classes.header.sub = str(sc.header.sub, 300, d.classes.header.sub);
+    }
+    if (Array.isArray(sc.cards)) {
+      var seen = {};
+      d.classes.cards = sc.cards.map(mergeCard).filter(function (c) {
+        if (!c || seen[c.id]) return false;
+        seen[c.id] = true;
+        return true;
+      }).slice(0, 24);
+    }
+  }
 
   /* ── Hero rendering (shared by page and admin preview) ── */
   FLO.heroHTML = function (h) {
@@ -127,6 +492,47 @@
       backgroundSize: 'cover',
       backgroundPosition: 'center'
     };
+  };
+
+  /* ── Class card rendering (shared by page and admin preview) ── */
+  FLO.classCardHTML = function (c) {
+    var esc = FLO.esc;
+    var icon = FLO.safeImageUrl(c.icon);
+    var iconHTML = icon
+      ? '<img src="' + esc(icon) + '" alt="' + esc(c.name) + '" class="class-icon-img" />'
+      : '<span class="class-icon-ph" aria-hidden="true">' + esc((c.name || '?').charAt(0).toUpperCase()) + '</span>';
+
+    var hover = '';
+    if (c.price) hover += '<p class="class-price">' + esc(c.price) + '</p>';
+    if (c.meta && c.meta.length) {
+      hover += '<ul class="class-meta">' + c.meta.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>';
+    }
+    if ((c.slots && c.slots.length) || c.slotsLabel) {
+      hover += '<div class="class-slots">';
+      if (c.slotsLabel) hover += '<p class="slots-label">' + esc(c.slotsLabel) + '</p>';
+      (c.slots || []).forEach(function (s) {
+        // Available slots on a highlighted (tangerine) card use the light style.
+        var cls = s.status === 'full' ? 'full' : 'available' + (c.highlight ? ' slot-light' : '');
+        hover += '<div class="slot ' + cls + '">' + esc(s.text) + '</div>';
+      });
+      hover += '</div>';
+    }
+    if (c.buttonLabel) {
+      hover += '<a href="' + esc(FLO.safeHref(c.buttonLink)) + '" class="btn btn-card' +
+        (c.waitlist ? ' btn-waitlist' : '') + '">' + esc(c.buttonLabel) + '</a>';
+    }
+
+    return '<div class="class-card' + (c.highlight ? ' highlight-card' : '') + '">' +
+      '<div class="card-inner">' +
+        '<div class="card-lottie-wrap">' + iconHTML + '</div>' +
+        '<div class="card-content">' +
+          '<h3>' + esc(c.name) + '</h3>' +
+          (c.type ? '<p class="class-type">' + esc(c.type) + '</p>' : '') +
+          (c.desc ? '<p class="class-desc">' + esc(c.desc) + '</p>' : '') +
+          (hover ? '<div class="card-hover-info">' + hover + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
   };
 
   /* ── Apply to the page ──────────────────────────────── */
@@ -167,10 +573,33 @@
     hero.style.backgroundPosition = bg.backgroundPosition;
   }
 
+  function applyClasses(w) {
+    var sec = document.querySelector('#classes');
+    if (!sec) return;
+    var hdr = sec.querySelector('.section-header');
+    if (hdr) {
+      var h = w.classes.header;
+      var label = hdr.querySelector('.section-label');
+      var title = hdr.querySelector('.section-title');
+      var sub = hdr.querySelector('.section-sub');
+      if (label) label.textContent = h.label;
+      if (title) title.textContent = h.title;
+      if (sub) sub.innerHTML = FLO.esc(h.sub).replace(/\r?\n/g, '<br>');
+    }
+    var grid = sec.querySelector('.classes-grid');
+    if (grid) {
+      grid.innerHTML = w.classes.cards
+        .filter(function (c) { return !c.hidden; })
+        .map(FLO.classCardHTML)
+        .join('');
+    }
+  }
+
   FLO.applyWebsite = function (w) {
     try {
       applyOrderAndVisibility(w);
       applyHero(w);
+      applyClasses(w);
     } catch (err) {
       console.error('FLO: could not apply website content.', err);
     }

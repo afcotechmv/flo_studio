@@ -6012,6 +6012,123 @@ body {
 .wsite-move:disabled { opacity: 0.35; cursor: not-allowed; }
 .wsite-reset { margin-top: 14px; }
 
+/* Classes editor */
+.class-icon-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--teal-light);
+    color: var(--teal);
+    font-size: 34px;
+}
+.highlight-card .class-icon-ph { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+.wsite-subhead {
+    font-size: 12px;
+    font-weight: normal;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin: 22px 0 10px;
+}
+.wsite-subhead-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+}
+.wsite-subhead-row .wsite-subhead { margin: 18px 0 10px; }
+.wsite-three {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+.wsite-three .admin-panel-input { width: 100%; display: block; font-family: 'Georgia', serif; }
+.wsite-back { margin-bottom: 8px; }
+.wsite-link-btn--danger { color: var(--tangerine); margin-left: auto; }
+.wsite-link-btn--danger:hover { color: #b94a30; }
+
+.wsite-clist { list-style: none; margin: 0 0 8px; padding: 0; }
+.wsite-crow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+.wsite-crow.is-hidden { opacity: 0.6; }
+.wsite-crow-thumb {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    object-fit: contain;
+    border-radius: 50%;
+    background: var(--teal-light);
+}
+.wsite-crow-thumb--ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--teal-dark);
+    font-size: 18px;
+}
+.wsite-crow-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wsite-crow-name { font-size: 15px; color: var(--text-dark); }
+.wsite-crow-type { font-size: 12px; color: var(--text-light); }
+.wsite-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.wsite-badge {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #f0f0ec;
+    color: var(--text-mid);
+}
+.wsite-badge--accent { background: var(--tangerine-light); color: var(--tangerine); }
+.wsite-crow-btns { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.wsite-small {
+    padding: 6px 12px;
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    background: #fff;
+    font-family: 'Georgia', serif;
+    font-size: 12px;
+    color: var(--text-dark);
+    cursor: pointer;
+}
+.wsite-small:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+.wsite-small:disabled { opacity: 0.4; cursor: not-allowed; }
+.wsite-small--danger { color: var(--tangerine); }
+.wsite-small--danger:hover:not(:disabled) { border-color: var(--tangerine); color: var(--tangerine); }
+
+.wsite-icon-thumb {
+    display: block;
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    background: var(--teal-light);
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+.wsite-slots { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.wsite-slot-row { display: flex; gap: 8px; align-items: center; }
+.wsite-slot-row .admin-panel-input { flex: 1; width: auto; }
+.wsite-checks { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.wsite-checks label { font-size: 13px; color: var(--text-dark); display: flex; align-items: center; gap: 8px; cursor: pointer; }
+
+.wsite-class-preview { max-width: 340px; }
+.wsite-class-preview .class-card { pointer-events: none; }
+.wsite-class-preview .card-hover-info { opacity: 1; transform: none; }
+
 @media (max-width: 768px) {
     .wsite-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .wsite-two { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -6020,4 +6137,10 @@ body {
     .wsite-actions { gap: 12px; }
     .wsite-hero-preview { min-height: 200px; padding: 20px 16px; }
     .wsite-hero-preview .hero-title { font-size: 22px; }
+    .wsite-three { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .wsite-crow { flex-wrap: wrap; }
+    .wsite-crow-main { flex-basis: calc(100% - 70px); }
+    .wsite-crow-btns { width: 100%; justify-content: flex-start; }
+    .wsite-slot-row { flex-wrap: wrap; }
+    .wsite-link-btn--danger { margin-left: 0; }
 }
