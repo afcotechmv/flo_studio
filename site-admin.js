@@ -3,7 +3,7 @@
    The "Website" area of the admin portal. Lets the signed-in
    administrator edit what visitors see on the public site.
 
-   Built so far: Hero, Classes, FLO Kids, Our Story, Page Order.
+   Built so far: Hero, Classes, FLO Kids, Our Story, The Team, Page Order.
    The other tabs are listed so the final structure is visible;
    each is switched on in a later stage.
 
@@ -22,7 +22,7 @@
     { key: 'classes', label: 'Classes',             built: true },
     { key: 'kids',   label: 'FLO Kids',            built: true },
     { key: 'story',  label: 'Our Story',           built: true },
-    { key: 'team',   label: 'The Team' },
+    { key: 'team',   label: 'The Team',            built: true },
     { key: 'events', label: 'Workshops & Events' },
     { key: 'footer', label: 'Footer' },
     { key: 'order',  label: 'Page Order',          built: true }
@@ -89,6 +89,7 @@
     if (key === 'hero') return renderHero();
     if (key === 'classes' || key === 'kids') return renderClasses();
     if (key === 'story') return renderStory();
+    if (key === 'team') return renderTeam();
     if (key === 'order') return renderOrder();
     renderPending(key);
   }
@@ -682,7 +683,7 @@
   var AUTO_OPTIONS = [
     { value: '',        label: 'Fixed text' },
     { value: 'classes', label: 'Count of class cards' },
-    { value: 'team',    label: 'Count of team cards' }
+    { value: 'team',    label: 'Count of instructors' }
   ];
 
   function ensureStoryDraft() {
@@ -898,6 +899,316 @@
       renderStory();
       setStatus(panel.querySelector('#ws-status'), 'Saved. The public page is updated.', 'ok');
     });
+  }
+
+  /* ── The Team editor ────────────────────────────────── */
+  var MAX_TEAM = 30, MAX_TAGS = 10;
+
+  function newMember() {
+    return { id: FLO.newId('t'), photo: '', name: 'New team member', role: '', bio: '', tags: [],
+             focus: 'center', counts: true, hidden: false };
+  }
+
+  function ensureTeamDraft() {
+    if (!draft || draft.__tab !== 'team') {
+      draft = { __tab: 'team', view: 'list', editId: null,
+                header: FLO.clone(FLO.website.team.header), cards: FLO.clone(FLO.website.team.cards) };
+    }
+  }
+  function findMember(id) { return draft.cards.filter(function (c) { return c.id === id; })[0]; }
+
+  function renderTeam() {
+    ensureTeamDraft();
+    if (draft.view === 'edit' && findMember(draft.editId)) return renderMemberEditor();
+    draft.view = 'list';
+    draft.editId = null;
+    renderTeamList();
+  }
+
+  function memberThumb(c) {
+    var url = FLO.safeImageUrl(c.photo);
+    return url
+      ? '<img class="wsite-crow-thumb wsite-crow-thumb--photo" src="' + esc(url) + '" alt="">'
+      : '<span class="wsite-crow-thumb wsite-crow-thumb--ph">' + esc((c.name || '?').charAt(0).toUpperCase()) + '</span>';
+  }
+
+  function renderTeamList() {
+    var h = draft.header;
+    var rows = draft.cards.map(function (c, i) {
+      var last = i === draft.cards.length - 1;
+      var badges = (c.hidden ? '<span class="wsite-badge">Hidden</span>' : '') +
+                   (!c.counts ? '<span class="wsite-badge">Not counted</span>' : '');
+      var sub = [c.role, c.tags.map(function (t) { return t.text; }).join(' \u00B7 ')].filter(Boolean).join(' \u2014 ');
+      return '<li class="wsite-crow' + (c.hidden ? ' is-hidden' : '') + '" data-id="' + esc(c.id) + '">' +
+        memberThumb(c) +
+        '<span class="wsite-crow-main">' +
+          '<span class="wsite-crow-name">' + esc(c.name) + '</span>' +
+          '<span class="wsite-crow-type">' + esc(sub) + '</span>' +
+          (badges ? '<span class="wsite-badges">' + badges + '</span>' : '') +
+        '</span>' +
+        '<span class="wsite-crow-btns">' +
+          '<button type="button" class="wsite-move" data-act="up" aria-label="Move ' + esc(c.name) + ' up"' + (i === 0 ? ' disabled' : '') + '>\u25B2</button>' +
+          '<button type="button" class="wsite-move" data-act="down" aria-label="Move ' + esc(c.name) + ' down"' + (last ? ' disabled' : '') + '>\u25BC</button>' +
+          '<button type="button" class="wsite-small" data-act="edit">Edit</button>' +
+          '<button type="button" class="wsite-small" data-act="dup"' + (draft.cards.length >= MAX_TEAM ? ' disabled' : '') + '>Duplicate</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-act="del">Delete</button>' +
+        '</span>' +
+      '</li>';
+    }).join('');
+
+    panel.innerHTML =
+      '<div class="portal-section wsite-card">' +
+        '<h3 class="portal-section-title">The Team</h3>' +
+        '<p class="portal-section-desc">The team cards on the public page. This is the public display only; instructor accounts and the schedule are managed separately in the main menu.</p>' +
+        '<h4 class="wsite-subhead">Section heading</h4>' +
+        '<div class="wsite-three">' +
+          field('Small label', 'Small text above the title.', '<input type="text" class="admin-panel-input" id="wc-label" maxlength="80" value="' + esc(h.label) + '">') +
+          field('Title', 'The main heading.', '<input type="text" class="admin-panel-input" id="wc-title" maxlength="120" value="' + esc(h.title) + '">') +
+          field('Sub-text', 'Line breaks are kept.', '<textarea class="admin-panel-input" id="wc-sub" rows="2" maxlength="300">' + esc(h.sub) + '</textarea>') +
+        '</div>' +
+        '<div class="wsite-subhead-row">' +
+          '<h4 class="wsite-subhead">Team members (' + draft.cards.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" id="wc-add"' + (draft.cards.length >= MAX_TEAM ? ' disabled' : '') + '>+ Add team member</button>' +
+        '</div>' +
+        (rows ? '<ul class="wsite-clist">' + rows + '</ul>' : '<p class="admin-empty-note">No team members yet.</p>') +
+        actions('wc') +
+      '</div>';
+    wireTeamList();
+  }
+
+  function wireTeamList() {
+    var statusEl = panel.querySelector('#wc-status');
+    function touch() { dirty = true; setStatus(statusEl, ''); }
+    panel.querySelector('#wc-label').addEventListener('input', function (e) { draft.header.label = e.target.value; touch(); });
+    panel.querySelector('#wc-title').addEventListener('input', function (e) { draft.header.title = e.target.value; touch(); });
+    panel.querySelector('#wc-sub').addEventListener('input', function (e) { draft.header.sub = e.target.value; touch(); });
+
+    panel.querySelector('#wc-add').addEventListener('click', function () {
+      var m = newMember();
+      draft.cards.push(m);
+      draft.view = 'edit';
+      draft.editId = m.id;
+      dirty = true;
+      renderMemberEditor();
+    });
+
+    var listEl = panel.querySelector('.wsite-clist');
+    if (listEl) {
+      listEl.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-act]');
+        if (!btn || btn.disabled) return;
+        var row = btn.closest('[data-id]');
+        var id = row && row.getAttribute('data-id');
+        var i = draft.cards.map(function (c) { return c.id; }).indexOf(id);
+        if (i < 0) return;
+        var act = btn.getAttribute('data-act');
+        if (act === 'edit') {
+          draft.view = 'edit'; draft.editId = id; renderMemberEditor();
+        } else if (act === 'up' || act === 'down') {
+          var j = act === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= draft.cards.length) return;
+          var tmp = draft.cards[i]; draft.cards[i] = draft.cards[j]; draft.cards[j] = tmp;
+          dirty = true; renderTeamList();
+        } else if (act === 'dup') {
+          var copy = FLO.clone(draft.cards[i]);
+          copy.id = FLO.newId('t');
+          copy.name = (copy.name + ' (copy)').slice(0, 60);
+          draft.cards.splice(i + 1, 0, copy);
+          dirty = true; renderTeamList();
+        } else if (act === 'del') {
+          if (!window.confirm('Delete \u201C' + draft.cards[i].name + '\u201D? They are removed from the public page when you press Save changes.')) return;
+          draft.cards.splice(i, 1);
+          dirty = true; renderTeamList();
+        }
+      });
+    }
+    panel.querySelector('#wc-discard').addEventListener('click', function () {
+      if (dirty && !window.confirm('Discard your unsaved changes?')) return;
+      draft = null; dirty = false; renderTeam();
+    });
+    panel.querySelector('#wc-save').addEventListener('click', function (e) { saveTeam(e.currentTarget, statusEl); });
+  }
+
+  function renderMemberEditor() {
+    var c = findMember(draft.editId);
+    if (!c) { draft.view = 'list'; return renderTeamList(); }
+    var photoUrl = FLO.safeImageUrl(c.photo);
+    var pos = c.focus === 'top' ? 'center top' : c.focus === 'bottom' ? 'center bottom' : 'center';
+
+    var tagRows = c.tags.map(function (t, i) {
+      return '<div class="wsite-slot-row" data-ti="' + i + '">' +
+        '<input type="text" class="admin-panel-input" data-tag-text maxlength="40" aria-label="Tag ' + (i + 1) + ' text" placeholder="e.g. Flow" value="' + esc(t.text) + '">' +
+        '<select class="admin-panel-select" data-tag-style aria-label="Tag ' + (i + 1) + ' style">' +
+          '<option value=""' + (t.style !== 'accent' ? ' selected' : '') + '>Standard (teal)</option>' +
+          '<option value="accent"' + (t.style === 'accent' ? ' selected' : '') + '>Accent (tangerine)</option>' +
+        '</select>' +
+        '<button type="button" class="wsite-small wsite-small--danger" data-tag-del>Remove</button>' +
+      '</div>';
+    }).join('');
+
+    panel.innerHTML =
+      '<div class="portal-section wsite-card">' +
+        '<p class="wsite-back"><button type="button" class="wsite-link-btn" id="wce-back">\u2190 Back to The Team</button></p>' +
+        '<h3 class="portal-section-title">Edit team member</h3>' +
+        '<div class="wsite-grid">' +
+          '<div class="wsite-form">' +
+            '<div class="wsite-two">' +
+              field('Name', 'As shown on the card.', '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(c.name) + '">') +
+              field('Role', 'Shown under the name. Optional.', '<input type="text" class="admin-panel-input" id="wce-role" maxlength="80" value="' + esc(c.role) + '">') +
+            '</div>' +
+            field('Bio', 'Shown over the photo when a visitor hovers over the card.', '<textarea class="admin-panel-input" id="wce-bio" rows="4" maxlength="400">' + esc(c.bio) + '</textarea>') +
+
+            '<div class="wsite-field">' +
+              '<label class="wsite-label">Photo</label>' +
+              '<p class="wsite-hint">Photos are cropped to a wide frame on the page. Large images are reduced automatically.</p>' +
+              (photoUrl ? '<img class="wsite-photo-thumb" src="' + esc(photoUrl) + '" alt="Current photo" style="object-position:' + pos + '">' : '') +
+              '<div class="wsite-row">' +
+                '<label class="btn-admin-add wsite-upload">' + (photoUrl ? 'Replace photo' : 'Upload photo') +
+                  '<input type="file" id="wce-file" accept="image/png,image/jpeg,image/webp" hidden>' +
+                '</label>' +
+                (photoUrl ? '<button type="button" class="wsite-link-btn" id="wce-rmphoto">Remove photo</button>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="wsite-field">' +
+              '<label class="wsite-label" for="wce-focus">Photo focus</label>' +
+              '<p class="wsite-hint">Which part of the photo stays in view when it is cropped. Use Top for portrait photos so faces are not cut off.</p>' +
+              '<select class="admin-panel-select" id="wce-focus">' +
+                '<option value="center"' + (c.focus === 'center' ? ' selected' : '') + '>Centre</option>' +
+                '<option value="top"' + (c.focus === 'top' ? ' selected' : '') + '>Top</option>' +
+                '<option value="bottom"' + (c.focus === 'bottom' ? ' selected' : '') + '>Bottom</option>' +
+              '</select>' +
+            '</div>' +
+
+            '<div class="wsite-field">' +
+              '<label class="wsite-label">Tags</label>' +
+              '<p class="wsite-hint">Small labels under the name, usually the classes this person teaches (up to 10).</p>' +
+              '<div class="wsite-slots" id="wce-tags">' + tagRows + '</div>' +
+              '<button type="button" class="wsite-small" id="wce-addtag"' + (c.tags.length >= MAX_TAGS ? ' disabled' : '') + '>+ Add tag</button>' +
+            '</div>' +
+
+            '<div class="wsite-checks">' +
+              '<label><input type="checkbox" id="wce-counts"' + (c.counts ? ' checked' : '') + '> Count as an instructor in the numbers row (Our Story)</label>' +
+              '<label><input type="checkbox" id="wce-hidden"' + (c.hidden ? ' checked' : '') + '> Hide this person from the public page</label>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wsite-preview-wrap">' +
+            '<p class="wsite-label">Preview</p>' +
+            '<p class="wsite-hint">Hover over the card to see the bio, as visitors do.</p>' +
+            '<div class="wsite-team-preview" id="wce-preview"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wsite-actions">' +
+          '<button type="button" class="btn-admin-primary" id="wce-save">Save changes</button>' +
+          '<button type="button" class="wsite-link-btn" id="wce-done">Back to The Team</button>' +
+          '<button type="button" class="wsite-link-btn wsite-link-btn--danger" id="wce-delete">Delete this person</button>' +
+          '<span class="wsite-status" id="wce-status" role="status"></span>' +
+        '</div>' +
+      '</div>';
+
+    updateMemberPreview(c);
+    wireMemberEditor(c);
+  }
+
+  function updateMemberPreview(c) {
+    var box = panel.querySelector('#wce-preview');
+    if (!box) return;
+    var pc = FLO.clone(c);
+    pc.tags = pc.tags.filter(function (t) { return t.text.trim(); });
+    box.innerHTML = FLO.teamCardHTML(pc);
+  }
+
+  function wireMemberEditor(c) {
+    var statusEl = panel.querySelector('#wce-status');
+    function touch() { dirty = true; setStatus(statusEl, ''); updateMemberPreview(c); }
+    function bind(id, fn) { panel.querySelector(id).addEventListener('input', function (e) { fn(e.target.value); touch(); }); }
+    bind('#wce-name', function (v) { c.name = v; });
+    bind('#wce-role', function (v) { c.role = v; });
+    bind('#wce-bio', function (v) { c.bio = v; });
+    panel.querySelector('#wce-focus').addEventListener('change', function (e) {
+      c.focus = e.target.value; dirty = true; renderMemberEditor();
+    });
+    panel.querySelector('#wce-counts').addEventListener('change', function (e) { c.counts = e.target.checked; touch(); });
+    panel.querySelector('#wce-hidden').addEventListener('change', function (e) { c.hidden = e.target.checked; touch(); });
+
+    // Tags
+    var tagsEl = panel.querySelector('#wce-tags');
+    function tagIndex(el) { return parseInt(el.closest('[data-ti]').getAttribute('data-ti'), 10); }
+    tagsEl.addEventListener('input', function (e) {
+      if (!e.target.matches('[data-tag-text]')) return;
+      c.tags[tagIndex(e.target)].text = e.target.value; touch();
+    });
+    tagsEl.addEventListener('change', function (e) {
+      if (!e.target.matches('[data-tag-style]')) return;
+      c.tags[tagIndex(e.target)].style = e.target.value === 'accent' ? 'accent' : ''; touch();
+    });
+    tagsEl.addEventListener('click', function (e) {
+      var del = e.target.closest('[data-tag-del]');
+      if (!del) return;
+      c.tags.splice(tagIndex(del), 1); dirty = true; renderMemberEditor();
+    });
+    panel.querySelector('#wce-addtag').addEventListener('click', function () {
+      c.tags.push({ text: '', style: '' }); dirty = true; renderMemberEditor();
+      var inputs = panel.querySelectorAll('[data-tag-text]');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+
+    // Photo
+    panel.querySelector('#wce-file').addEventListener('change', async function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      setStatus(statusEl, 'Uploading photo\u2026', 'busy');
+      var res = await FLO.uploadImage(file, 'team', { maxDim: 900, quality: 0.85 });
+      if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
+      c.photo = res.url; dirty = true; renderMemberEditor();
+      setStatus(panel.querySelector('#wce-status'), 'Photo uploaded. Press Save changes to publish it.', 'ok');
+    });
+    var rm = panel.querySelector('#wce-rmphoto');
+    if (rm) rm.addEventListener('click', function () { c.photo = ''; dirty = true; renderMemberEditor(); });
+
+    function back() { draft.view = 'list'; draft.editId = null; renderTeamList(); }
+    panel.querySelector('#wce-back').addEventListener('click', back);
+    panel.querySelector('#wce-done').addEventListener('click', back);
+    panel.querySelector('#wce-delete').addEventListener('click', function () {
+      if (!window.confirm('Delete \u201C' + c.name + '\u201D? They are removed from the public page when you press Save changes.')) return;
+      draft.cards = draft.cards.filter(function (x) { return x.id !== c.id; });
+      dirty = true; back();
+    });
+    panel.querySelector('#wce-save').addEventListener('click', function (e) { saveTeam(e.currentTarget, statusEl); });
+  }
+
+  async function saveTeam(btn, statusEl) {
+    for (var i = 0; i < draft.cards.length; i++) {
+      if (!String(draft.cards[i].name || '').trim()) {
+        setStatus(statusEl, 'Every team member needs a name (card ' + (i + 1) + ').', 'err');
+        return;
+      }
+    }
+    var cards = draft.cards.map(function (c) {
+      return {
+        id: c.id, photo: c.photo, name: c.name.trim(), role: c.role.trim(), bio: c.bio.trim(),
+        tags: c.tags.map(function (t) { return { text: t.text.trim(), style: t.style }; })
+                    .filter(function (t) { return t.text; }),
+        focus: c.focus, counts: c.counts, hidden: c.hidden
+      };
+    });
+    btn.disabled = true;
+    setStatus(statusEl, 'Saving\u2026', 'busy');
+    var next = FLO.clone(FLO.website);
+    next.team = {
+      header: { label: draft.header.label.trim(), title: draft.header.title.trim(), sub: draft.header.sub.trim() },
+      cards: cards
+    };
+    var res = await FLO.saveWebsite(next);
+    btn.disabled = false;
+    if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
+    var view = draft.view, editId = draft.editId;
+    dirty = false;
+    draft = null;
+    ensureTeamDraft();
+    draft.view = view;
+    draft.editId = editId;
+    renderTeam();
+    setStatus(panel.querySelector('#wc-status') || panel.querySelector('#wce-status'), 'Saved. The public page is updated.', 'ok');
   }
 
   /* ── Page order & visibility ────────────────────────── */

@@ -473,6 +473,323 @@
         }
       ],
       "closing": ""
+    },
+    team: {
+      "header": {
+        "label": "The team",
+        "title": "The hands that guide you.",
+        "sub": "Every instructor at FLO is chosen not just for their expertise,\nbut for the way they hold a room."
+      },
+      "cards": [
+        {
+          "id": "team-maani",
+          "photo": "images/profiles/aisha.jpg",
+          "name": "Maani",
+          "role": "Founder & Owner",
+          "bio": "The heart behind FLO. Maani created a space where women can feel safe, strong, inspired, and connected — and she shows up in every class with that same intention.",
+          "tags": [
+            {
+              "text": "Flow",
+              "style": ""
+            },
+            {
+              "text": "Pulse",
+              "style": ""
+            },
+            {
+              "text": "Soar",
+              "style": ""
+            },
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "Transform",
+              "style": ""
+            },
+            {
+              "text": "Connect",
+              "style": ""
+            },
+            {
+              "text": "Reset",
+              "style": ""
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-amu",
+          "photo": "images/profiles/fathun.jpg",
+          "name": "Amu",
+          "role": "",
+          "bio": "Sweet, prepared, and guiding. Amu's classes feel safe, smooth, and well-planned — helping clients feel confident and never insecure.",
+          "tags": [
+            {
+              "text": "Flow",
+              "style": ""
+            },
+            {
+              "text": "Sculpt",
+              "style": ""
+            },
+            {
+              "text": "Soar",
+              "style": ""
+            },
+            {
+              "text": "ReBoot",
+              "style": "accent"
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-hafy",
+          "photo": "images/profiles/maryam.jpg",
+          "name": "Hafy",
+          "role": "",
+          "bio": "Disciplined and reliable. Hafy inspires early birds to begin their day with purpose and health — her consistency is contagious.",
+          "tags": [
+            {
+              "text": "Flow",
+              "style": ""
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-shaba",
+          "photo": "images/profiles/aminath.jpg",
+          "name": "Shaba",
+          "role": "",
+          "bio": "Social and friendly, Shaba creates a warm and welcoming space for women who seek connection and belonging. Her classes feel like community.",
+          "tags": [
+            {
+              "text": "Flow",
+              "style": ""
+            },
+            {
+              "text": "Connect",
+              "style": ""
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-niya",
+          "photo": "images/profiles/khadeeja.jpg",
+          "name": "Niya",
+          "role": "",
+          "bio": "Trustworthy and consistent. Niya is loved by kids and loyal clients alike who value her calm, steady guidance in every session.",
+          "tags": [
+            {
+              "text": "Flow",
+              "style": ""
+            },
+            {
+              "text": "Soar",
+              "style": ""
+            },
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "Transform",
+              "style": ""
+            },
+            {
+              "text": "Fly · Kids",
+              "style": "accent"
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-miru",
+          "photo": "images/profiles/zainab.jpg",
+          "name": "Miru",
+          "role": "",
+          "bio": "Dynamic and goal-oriented. Miru connects with busy women who want results, strength, and self-growth — and delivers every time.",
+          "tags": [
+            {
+              "text": "Flow",
+              "style": ""
+            },
+            {
+              "text": "Soar",
+              "style": ""
+            },
+            {
+              "text": "ReBoot",
+              "style": "accent"
+            },
+            {
+              "text": "Fly · Kids",
+              "style": "accent"
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-shamma",
+          "photo": "images/profiles/aisha.jpg",
+          "name": "Shamma",
+          "role": "",
+          "bio": "Caring and attentive, with a nurturing approach that makes every client feel supported. Shamma notices what others miss.",
+          "tags": [
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "Soar",
+              "style": ""
+            },
+            {
+              "text": "Transform",
+              "style": ""
+            },
+            {
+              "text": "Fly · Kids",
+              "style": "accent"
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-salie",
+          "photo": "images/profiles/fathun.jpg",
+          "name": "Salie",
+          "role": "",
+          "bio": "Helpful and guiding, Salie is always ready to assist, encourage, and uplift. She meets every client exactly where they are.",
+          "tags": [
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "Transform",
+              "style": ""
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-shiu",
+          "photo": "images/profiles/maryam.jpg",
+          "name": "Shiu",
+          "role": "",
+          "bio": "Sharp and result-oriented. Shiu is focused on progress, precision, and strength — her clients know exactly what they're working toward.",
+          "tags": [
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "ReBoot",
+              "style": "accent"
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-dheena",
+          "photo": "images/profiles/aminath.jpg",
+          "name": "Dheena",
+          "role": "",
+          "bio": "Friendly and supportive, Dheena creates comfort, trust, and connection in every class. She makes the studio feel like a second home.",
+          "tags": [
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "Connect",
+              "style": ""
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-meera",
+          "photo": "images/profiles/khadeeja.jpg",
+          "name": "Meera",
+          "role": "",
+          "bio": "Reliable, focused, and graceful. Meera motivates women who train with intention and brings nurturing patience and beauty to young ballet students.",
+          "tags": [
+            {
+              "text": "Sculpt",
+              "style": ""
+            },
+            {
+              "text": "Reform",
+              "style": ""
+            },
+            {
+              "text": "Transform",
+              "style": ""
+            },
+            {
+              "text": "Ballet",
+              "style": ""
+            },
+            {
+              "text": "Twirl Ballet · Kids",
+              "style": "accent"
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        },
+        {
+          "id": "team-zira",
+          "photo": "images/profiles/zainab.jpg",
+          "name": "Zira",
+          "role": "",
+          "bio": "Naturally calming, with a psychology background that helps guide breathing, quiet the mind, and leave every client in a peaceful space.",
+          "tags": [
+            {
+              "text": "Reset",
+              "style": ""
+            },
+            {
+              "text": "Breathwork",
+              "style": ""
+            },
+            {
+              "text": "Psychology",
+              "style": ""
+            }
+          ],
+          "focus": "center",
+          "counts": true,
+          "hidden": false
+        }
+      ]
     }
   };
 
@@ -535,6 +852,7 @@
     mergeCollection(stored, d, 'classes');
     mergeCollection(stored, d, 'kids');
     mergeStory(stored, d);
+    mergeTeam(stored, d);
     return d;
   };
 
@@ -627,6 +945,68 @@
     t.closing = str(ss.closing, 200, t.closing);
   }
 
+  /* ── The Team: merge / validate ─────────────────────── */
+  function mergeTeamCard(c) {
+    if (!c || typeof c !== 'object') return null;
+    var name = str(c.name, 60, '').trim();
+    if (!name) return null;
+    return {
+      id: str(c.id, 40, '') || FLO.newId('t'),
+      photo: str(c.photo, 400, ''),
+      name: name,
+      role: str(c.role, 80, ''),
+      bio: str(c.bio, 400, ''),
+      tags: list(c.tags).map(function (t) {
+        return { text: String(t && t.text != null ? t.text : '').trim().slice(0, 40),
+                 style: t && t.style === 'accent' ? 'accent' : '' };
+      }).filter(function (t) { return t.text; }).slice(0, 10),
+      focus: c.focus === 'top' || c.focus === 'bottom' ? c.focus : 'center',
+      counts: c.counts !== false,
+      hidden: c.hidden === true
+    };
+  }
+
+  function mergeTeam(stored, d) {
+    var st = stored.team;
+    if (!st || typeof st !== 'object') return;
+    if (st.header && typeof st.header === 'object') {
+      d.team.header.label = str(st.header.label, 80, d.team.header.label);
+      d.team.header.title = str(st.header.title, 120, d.team.header.title);
+      d.team.header.sub = str(st.header.sub, 300, d.team.header.sub);
+    }
+    if (Array.isArray(st.cards)) {
+      var seen = {};
+      d.team.cards = st.cards.map(mergeTeamCard).filter(function (c) {
+        if (!c || seen[c.id]) return false;
+        seen[c.id] = true;
+        return true;
+      }).slice(0, 30);
+    }
+  }
+
+  FLO.teamCardHTML = function (c) {
+    var esc = FLO.esc;
+    var photo = FLO.safeImageUrl(c.photo);
+    var pos = c.focus === 'top' ? 'center top' : c.focus === 'bottom' ? 'center bottom' : '';
+    var img = photo
+      ? '<img src="' + esc(photo) + '" alt="' + esc(c.name) + '" class="instructor-img"' +
+        (pos ? ' style="object-position:' + pos + '"' : '') + ' />'
+      : '<span class="instructor-img-ph" aria-hidden="true">' + esc((c.name || '?').charAt(0).toUpperCase()) + '</span>';
+    var tags = (c.tags || []).map(function (t) {
+      return '<span class="tag' + (t.style === 'accent' ? ' tag-accent' : '') + '">' + esc(t.text) + '</span>';
+    }).join('');
+    return '<div class="instructor-card">' +
+      '<div class="instructor-img-wrap">' + img +
+        (c.bio ? '<div class="instructor-overlay"><p class="instructor-bio">' + esc(c.bio) + '</p></div>' : '') +
+      '</div>' +
+      '<div class="instructor-info">' +
+        '<h3>' + esc(c.name) + '</h3>' +
+        (c.role ? '<p class="class-type">' + esc(c.role) + '</p>' : '') +
+        (tags ? '<div class="instructor-tags">' + tags + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  };
+
   // Automatic figures for the stats row.
   FLO.autoStat = function (kind, w) {
     w = w || FLO.website;
@@ -634,8 +1014,8 @@
       return w.classes.cards.filter(function (c) { return !c.hidden; }).length;
     }
     if (kind === 'team') {
-      // Counts the team cards on the page (their editor comes in a later stage).
-      return document.querySelectorAll('#instructors .instructor-card').length;
+      // Visible team cards that are marked "count as an instructor".
+      return w.team.cards.filter(function (c) { return !c.hidden && c.counts; }).length;
     }
     return 0;
   };
@@ -867,6 +1247,28 @@
     }
   }
 
+  function applyTeam(w) {
+    var sec = document.querySelector('#instructors');
+    if (!sec) return;
+    var hdr = sec.querySelector('.section-header');
+    if (hdr) {
+      var h = w.team.header;
+      var label = hdr.querySelector('.section-label');
+      var title = hdr.querySelector('.section-title');
+      var sub = hdr.querySelector('.section-sub');
+      if (label) label.textContent = h.label;
+      if (title) title.textContent = h.title;
+      if (sub) sub.innerHTML = FLO.esc(h.sub).replace(/\r?\n/g, '<br>');
+    }
+    var grid = sec.querySelector('.instructors-grid');
+    if (grid) {
+      grid.innerHTML = w.team.cards
+        .filter(function (c) { return !c.hidden; })
+        .map(FLO.teamCardHTML)
+        .join('');
+    }
+  }
+
   function applyStory(w) {
     var sec = document.querySelector('#about');
     if (sec) sec.innerHTML = FLO.storyHTML(w.story, w);
@@ -878,7 +1280,8 @@
       applyHero(w);
       applyClasses(w);
       applyKids(w);
-      applyStory(w);   // after Classes, because a stat can count the class cards
+      applyTeam(w);
+      applyStory(w);   // last: a number in the story row can count class and team cards
     } catch (err) {
       console.error('FLO: could not apply website content.', err);
     }
