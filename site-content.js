@@ -423,6 +423,56 @@
           "hidden": false
         }
       ]
+    },
+    story: {
+      "label": "Our story",
+      "titleLines": [
+        "Built for women.",
+        "By women."
+      ],
+      "paragraphs": [
+        "FLO was born from a simple belief — that every woman deserves a space that truly understands her body, her rhythm, and her journey. No competition. No judgment. Just movement, breath, and growth at your own pace.",
+        "Whether you're here to build strength, find calm, or simply carve out an hour that's entirely yours — FLO is that place."
+      ],
+      "buttonLabel": "Meet the Team",
+      "buttonLink": "#instructors",
+      "pillars": [
+        {
+          "word": "Feel",
+          "desc": "Your mental wellbeing comes first. Every class is designed to leave you calmer, clearer, and more connected to yourself."
+        },
+        {
+          "word": "Look",
+          "desc": "Move with intention and your body will follow. Build real strength, posture, and energy that shows."
+        },
+        {
+          "word": "Own",
+          "desc": "Your journey is yours alone. No races, no comparisons. Just you, learning and growing at your own pace."
+        }
+      ],
+      "stats": [
+        {
+          "value": "9",
+          "label": "Class types",
+          "auto": ""
+        },
+        {
+          "value": "100%",
+          "label": "Women only",
+          "auto": ""
+        },
+        {
+          "value": "6",
+          "label": "Expert instructors",
+          "auto": ""
+        },
+        {
+          "value": "Hulhumalé",
+          "label": "Maldives",
+          "auto": ""
+        }
+      ],
+      "closing": ""
     }
   };
 
@@ -484,6 +534,7 @@
     }
     mergeCollection(stored, d, 'classes');
     mergeCollection(stored, d, 'kids');
+    mergeStory(stored, d);
     return d;
   };
 
@@ -542,6 +593,87 @@
       }).slice(0, 24);
     }
   }
+
+  /* ── Our Story: merge / validate ────────────────────── */
+  function mergeStory(stored, d) {
+    var ss = stored.story;
+    if (!ss || typeof ss !== 'object') return;
+    var t = d.story;
+    t.label = str(ss.label, 80, t.label);
+    if (Array.isArray(ss.titleLines)) {
+      var lines = ss.titleLines.map(function (l) { return String(l == null ? '' : l).trim().slice(0, 80); })
+                               .filter(Boolean).slice(0, 4);
+      if (lines.length) t.titleLines = lines;
+    }
+    if (Array.isArray(ss.paragraphs)) {
+      t.paragraphs = ss.paragraphs.map(function (x) { return String(x == null ? '' : x).trim().slice(0, 1200); })
+                                  .filter(Boolean).slice(0, 8);
+    }
+    t.buttonLabel = str(ss.buttonLabel, 40, t.buttonLabel);
+    t.buttonLink = str(ss.buttonLink, 300, t.buttonLink) || '#';
+    if (Array.isArray(ss.pillars)) {
+      t.pillars = ss.pillars.map(function (p) {
+        return { word: String(p && p.word != null ? p.word : '').trim().slice(0, 30),
+                 desc: String(p && p.desc != null ? p.desc : '').trim().slice(0, 400) };
+      }).filter(function (p) { return p.word || p.desc; }).slice(0, 6);
+    }
+    if (Array.isArray(ss.stats)) {
+      t.stats = ss.stats.map(function (x) {
+        var auto = x && (x.auto === 'classes' || x.auto === 'team') ? x.auto : '';
+        return { value: String(x && x.value != null ? x.value : '').trim().slice(0, 30),
+                 label: String(x && x.label != null ? x.label : '').trim().slice(0, 40), auto: auto };
+      }).filter(function (x) { return x.value || x.label || x.auto; }).slice(0, 6);
+    }
+    t.closing = str(ss.closing, 200, t.closing);
+  }
+
+  // Automatic figures for the stats row.
+  FLO.autoStat = function (kind, w) {
+    w = w || FLO.website;
+    if (kind === 'classes') {
+      return w.classes.cards.filter(function (c) { return !c.hidden; }).length;
+    }
+    if (kind === 'team') {
+      // Counts the team cards on the page (their editor comes in a later stage).
+      return document.querySelectorAll('#instructors .instructor-card').length;
+    }
+    return 0;
+  };
+
+  FLO.storyHTML = function (st, w) {
+    var esc = FLO.esc;
+    var text = '<div class="about-text">' +
+      (st.label ? '<p class="section-label">' + esc(st.label) + '</p>' : '') +
+      (st.titleLines.length
+        ? '<h2 class="section-title" style="text-align:left;">' + st.titleLines.map(esc).join('<br>') + '</h2>'
+        : '') +
+      st.paragraphs.map(function (p) { return '<p class="about-desc">' + esc(p) + '</p>'; }).join('') +
+      (st.buttonLabel ? '<a href="' + esc(FLO.safeHref(st.buttonLink)) + '" class="btn">' + esc(st.buttonLabel) + '</a>' : '') +
+    '</div>';
+
+    var pillars = '<div class="about-pillars">' +
+      st.pillars.map(function (p) {
+        return '<div class="pillar">' +
+          (p.word ? '<span class="pillar-word">' + esc(p.word) + '</span>' : '') +
+          (p.desc ? '<p class="pillar-desc">' + esc(p.desc) + '</p>' : '') +
+        '</div>';
+      }).join('') +
+    '</div>';
+
+    var html = '<div class="about-grid">' + text + pillars + '</div>';
+    if (st.closing) html += '<p class="about-closing">' + esc(st.closing) + '</p>';
+    if (st.stats.length) {
+      var cols = st.stats.length <= 4 ? st.stats.length : 3;
+      html += '<div class="about-stats" style="--stat-cols:' + cols + '">' +
+        st.stats.map(function (x) {
+          var value = x.auto ? String(FLO.autoStat(x.auto, w)) : x.value;
+          return '<div class="stat"><span class="stat-number">' + esc(value) + '</span>' +
+            '<span class="stat-label">' + esc(x.label) + '</span></div>';
+        }).join('') +
+      '</div>';
+    }
+    return html;
+  };
 
   /* ── Hero rendering (shared by page and admin preview) ── */
   FLO.heroHTML = function (h) {
@@ -735,12 +867,18 @@
     }
   }
 
+  function applyStory(w) {
+    var sec = document.querySelector('#about');
+    if (sec) sec.innerHTML = FLO.storyHTML(w.story, w);
+  }
+
   FLO.applyWebsite = function (w) {
     try {
       applyOrderAndVisibility(w);
       applyHero(w);
       applyClasses(w);
       applyKids(w);
+      applyStory(w);   // after Classes, because a stat can count the class cards
     } catch (err) {
       console.error('FLO: could not apply website content.', err);
     }

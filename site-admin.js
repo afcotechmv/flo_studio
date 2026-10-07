@@ -3,7 +3,7 @@
    The "Website" area of the admin portal. Lets the signed-in
    administrator edit what visitors see on the public site.
 
-   Built so far: Hero, Classes, FLO Kids, Page Order.
+   Built so far: Hero, Classes, FLO Kids, Our Story, Page Order.
    The other tabs are listed so the final structure is visible;
    each is switched on in a later stage.
 
@@ -21,7 +21,7 @@
     { key: 'hero',   label: 'Hero',                built: true },
     { key: 'classes', label: 'Classes',             built: true },
     { key: 'kids',   label: 'FLO Kids',            built: true },
-    { key: 'story',  label: 'Our Story' },
+    { key: 'story',  label: 'Our Story',           built: true },
     { key: 'team',   label: 'The Team' },
     { key: 'events', label: 'Workshops & Events' },
     { key: 'footer', label: 'Footer' },
@@ -88,6 +88,7 @@
     markTabs();
     if (key === 'hero') return renderHero();
     if (key === 'classes' || key === 'kids') return renderClasses();
+    if (key === 'story') return renderStory();
     if (key === 'order') return renderOrder();
     renderPending(key);
   }
@@ -673,6 +674,230 @@
     renderClasses();
     setStatus(panel.querySelector('#wc-status') || panel.querySelector('#wce-status'),
       'Saved. The public page is updated.', 'ok');
+  }
+
+  /* ── Our Story editor ───────────────────────────────── */
+  var MAX_PILLARS = 6, MAX_STATS = 6;
+
+  var AUTO_OPTIONS = [
+    { value: '',        label: 'Fixed text' },
+    { value: 'classes', label: 'Count of class cards' },
+    { value: 'team',    label: 'Count of team cards' }
+  ];
+
+  function ensureStoryDraft() {
+    if (!draft || draft.__tab !== 'story') {
+      draft = { __tab: 'story', d: FLO.clone(FLO.website.story) };
+    }
+    return draft.d;
+  }
+
+  function renderStory() {
+    var d = ensureStoryDraft();
+
+    var pillarRows = d.pillars.map(function (p, i) {
+      return '<div class="wsite-prow" data-pi="' + i + '">' +
+        '<input type="text" class="admin-panel-input wsite-prow-short" data-pf="word" maxlength="30" aria-label="Pillar ' + (i + 1) + ' word" placeholder="Word" value="' + esc(p.word) + '">' +
+        '<textarea class="admin-panel-input" data-pf="desc" rows="2" maxlength="400" aria-label="Pillar ' + (i + 1) + ' text" placeholder="Short description">' + esc(p.desc) + '</textarea>' +
+        '<span class="wsite-prow-btns">' +
+          '<button type="button" class="wsite-move" data-pact="up" aria-label="Move pillar ' + (i + 1) + ' up"' + (i === 0 ? ' disabled' : '') + '>\u25B2</button>' +
+          '<button type="button" class="wsite-move" data-pact="down" aria-label="Move pillar ' + (i + 1) + ' down"' + (i === d.pillars.length - 1 ? ' disabled' : '') + '>\u25BC</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-pact="del">Delete</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    var statRows = d.stats.map(function (x, i) {
+      var isAuto = !!x.auto;
+      return '<div class="wsite-prow wsite-srow" data-si="' + i + '">' +
+        '<input type="text" class="admin-panel-input wsite-prow-short" data-sf="value" maxlength="30" aria-label="Number ' + (i + 1) + ' value" placeholder="' + (isAuto ? 'Automatic' : 'e.g. 100%') + '" value="' + (isAuto ? '' : esc(x.value)) + '"' + (isAuto ? ' disabled' : '') + '>' +
+        '<input type="text" class="admin-panel-input" data-sf="label" maxlength="40" aria-label="Number ' + (i + 1) + ' label" placeholder="Label" value="' + esc(x.label) + '">' +
+        '<span class="wsite-srow-src">' +
+          '<select class="admin-panel-select" data-sf="auto" aria-label="Number ' + (i + 1) + ' source">' +
+            AUTO_OPTIONS.map(function (o) { return '<option value="' + o.value + '"' + (o.value === x.auto ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') +
+          '</select>' +
+          (isAuto ? '<span class="wsite-hint wsite-srow-now">Currently ' + FLO.autoStat(x.auto, FLO.website) + '</span>' : '') +
+        '</span>' +
+        '<span class="wsite-prow-btns">' +
+          '<button type="button" class="wsite-move" data-sact="up" aria-label="Move number ' + (i + 1) + ' up"' + (i === 0 ? ' disabled' : '') + '>\u25B2</button>' +
+          '<button type="button" class="wsite-move" data-sact="down" aria-label="Move number ' + (i + 1) + ' down"' + (i === d.stats.length - 1 ? ' disabled' : '') + '>\u25BC</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-sact="del">Delete</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+
+    panel.innerHTML =
+      '<div class="portal-section wsite-card">' +
+        '<h3 class="portal-section-title">Our Story</h3>' +
+        '<p class="portal-section-desc">The \u201COur story\u201D section: the text, the pillars (Feel \u00B7 Look \u00B7 Own) and the row of numbers beneath.</p>' +
+
+        '<h4 class="wsite-subhead">Text</h4>' +
+        '<div class="wsite-form">' +
+        '<div class="wsite-two">' +
+          field('Small label', 'Small text above the title.', '<input type="text" class="admin-panel-input" id="ws-label" maxlength="80" value="' + esc(d.label) + '">') +
+          field('Title', 'One line per row.', '<textarea class="admin-panel-input" id="ws-title" rows="2" maxlength="200">' + esc(d.titleLines.join('\n')) + '</textarea>') +
+        '</div>' +
+        field('Paragraphs', 'Leave a blank line between paragraphs (up to 8).',
+          '<textarea class="admin-panel-input" id="ws-paras" rows="7" maxlength="6000">' + esc(d.paragraphs.join('\n\n')) + '</textarea>') +
+        '<div class="wsite-two">' +
+          field('Button text', 'Leave empty to hide the button.', '<input type="text" class="admin-panel-input" id="ws-btn" maxlength="40" value="' + esc(d.buttonLabel) + '">') +
+          field('Button link', 'e.g. #instructors or https://\u2026', '<input type="text" class="admin-panel-input" id="ws-link" maxlength="300" value="' + esc(d.buttonLink) + '">') +
+        '</div>' +
+        field('Closing line', 'Optional. Shown in italics, centred, under the pillars (e.g. \u201C\u2014 FLO is that place.\u201D).',
+          '<input type="text" class="admin-panel-input" id="ws-closing" maxlength="200" value="' + esc(d.closing) + '">') +
+        '</div>' +
+
+        '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Pillars (' + d.pillars.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" id="ws-addpillar"' + (d.pillars.length >= MAX_PILLARS ? ' disabled' : '') + '>+ Add pillar</button></div>' +
+        (pillarRows || '<p class="admin-empty-note">No pillars.</p>') +
+
+        '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Numbers (' + d.stats.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" id="ws-addstat"' + (d.stats.length >= MAX_STATS ? ' disabled' : '') + '>+ Add number</button></div>' +
+        '<p class="wsite-hint">Each number is either fixed text or counted automatically from the cards on the page.</p>' +
+        (statRows || '<p class="admin-empty-note">No numbers.</p>') +
+
+        '<h4 class="wsite-subhead">Preview</h4>' +
+        '<div class="wsite-about-preview" id="ws-preview"></div>' +
+
+        actions('ws') +
+      '</div>';
+
+    updateStoryPreview();
+    wireStory();
+  }
+
+  function updateStoryPreview() {
+    var box = panel.querySelector('#ws-preview');
+    if (!box) return;
+    var d = FLO.clone(draft.d);
+    d.buttonLink = '#';
+    box.innerHTML = FLO.storyHTML(d, FLO.website);
+  }
+
+  function wireStory() {
+    var d = draft.d;
+    var statusEl = panel.querySelector('#ws-status');
+    function touch() { dirty = true; setStatus(statusEl, ''); updateStoryPreview(); }
+    function bind(id, fn) { panel.querySelector(id).addEventListener('input', function (e) { fn(e.target.value); touch(); }); }
+    function move(arr, i, dir) {
+      var j = dir === 'up' ? i - 1 : i + 1;
+      if (j < 0 || j >= arr.length) return false;
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+      return true;
+    }
+
+    bind('#ws-label', function (v) { d.label = v; });
+    bind('#ws-title', function (v) { d.titleLines = v.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean); });
+    bind('#ws-paras', function (v) { d.paragraphs = v.split(/\r?\n\s*\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean); });
+    bind('#ws-btn', function (v) { d.buttonLabel = v; });
+    bind('#ws-link', function (v) { d.buttonLink = v; });
+    bind('#ws-closing', function (v) { d.closing = v; });
+
+    // Pillars
+    panel.querySelectorAll('[data-pi]').forEach(function (row) {
+      var i = parseInt(row.getAttribute('data-pi'), 10);
+      row.addEventListener('input', function (e) {
+        var f = e.target.getAttribute('data-pf');
+        if (!f) return;
+        d.pillars[i][f] = e.target.value;
+        touch();
+      });
+      row.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-pact]');
+        if (!b || b.disabled) return;
+        var act = b.getAttribute('data-pact');
+        if (act === 'del') d.pillars.splice(i, 1);
+        else if (!move(d.pillars, i, act)) return;
+        dirty = true;
+        renderStory();
+      });
+    });
+    panel.querySelector('#ws-addpillar').addEventListener('click', function () {
+      d.pillars.push({ word: '', desc: '' });
+      dirty = true;
+      renderStory();
+      var words = panel.querySelectorAll('[data-pf="word"]');
+      if (words.length) words[words.length - 1].focus();
+    });
+
+    // Numbers
+    panel.querySelectorAll('[data-si]').forEach(function (row) {
+      var i = parseInt(row.getAttribute('data-si'), 10);
+      row.addEventListener('input', function (e) {
+        var f = e.target.getAttribute('data-sf');
+        if (f !== 'value' && f !== 'label') return;
+        d.stats[i][f] = e.target.value;
+        touch();
+      });
+      row.addEventListener('change', function (e) {
+        if (e.target.getAttribute('data-sf') !== 'auto') return;
+        d.stats[i].auto = e.target.value;
+        dirty = true;
+        renderStory();
+      });
+      row.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-sact]');
+        if (!b || b.disabled) return;
+        var act = b.getAttribute('data-sact');
+        if (act === 'del') d.stats.splice(i, 1);
+        else if (!move(d.stats, i, act)) return;
+        dirty = true;
+        renderStory();
+      });
+    });
+    panel.querySelector('#ws-addstat').addEventListener('click', function () {
+      d.stats.push({ value: '', label: '', auto: '' });
+      dirty = true;
+      renderStory();
+      var vals = panel.querySelectorAll('[data-sf="value"]');
+      if (vals.length) vals[vals.length - 1].focus();
+    });
+
+    panel.querySelector('#ws-discard').addEventListener('click', function () {
+      if (dirty && !window.confirm('Discard your unsaved changes?')) return;
+      draft = null;
+      dirty = false;
+      renderStory();
+    });
+
+    panel.querySelector('#ws-save').addEventListener('click', async function (e) {
+      var btn = e.currentTarget;
+      var link = String(d.buttonLink || '').trim();
+      if (d.buttonLabel.trim() && link && !/^(#|https?:\/\/|mailto:|tel:)/i.test(link)) {
+        setStatus(statusEl, 'The button link must start with #, https://, mailto: or tel:.', 'err');
+        return;
+      }
+      for (var k = 0; k < d.stats.length; k++) {
+        var x = d.stats[k];
+        if (!x.auto && !x.value.trim() && x.label.trim()) {
+          setStatus(statusEl, 'Number ' + (k + 1) + ' (\u201C' + x.label.trim() + '\u201D) needs a value or an automatic source.', 'err');
+          return;
+        }
+      }
+      var story = {
+        label: d.label.trim(),
+        titleLines: d.titleLines.slice(),
+        paragraphs: d.paragraphs.slice(),
+        buttonLabel: d.buttonLabel.trim(),
+        buttonLink: link || '#',
+        pillars: d.pillars.map(function (p) { return { word: p.word.trim(), desc: p.desc.trim() }; })
+                          .filter(function (p) { return p.word || p.desc; }),
+        stats: d.stats.map(function (x) { return { value: x.auto ? '' : x.value.trim(), label: x.label.trim(), auto: x.auto || '' }; })
+                      .filter(function (x) { return x.value || x.label || x.auto; }),
+        closing: d.closing.trim()
+      };
+      btn.disabled = true;
+      setStatus(statusEl, 'Saving\u2026', 'busy');
+      var next = FLO.clone(FLO.website);
+      next.story = story;
+      var res = await FLO.saveWebsite(next);
+      btn.disabled = false;
+      if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
+      dirty = false;
+      draft = null;
+      renderStory();
+      setStatus(panel.querySelector('#ws-status'), 'Saved. The public page is updated.', 'ok');
+    });
   }
 
   /* ── Page order & visibility ────────────────────────── */

@@ -578,7 +578,7 @@ body {
 /* ── STATS ── */
 .about-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--stat-cols, 4), 1fr);
   gap: 24px;
   border-top: 1px solid #d0e8e5;
   padding-top: 60px;
@@ -6157,6 +6157,46 @@ body {
 .wsite-kids-preview .kids-card { pointer-events: none; }
 .wsite-three textarea.admin-panel-input { resize: vertical; line-height: 1.5; }
 
+/* Our Story: optional closing line (empty by default, so nothing shows) */
+.about-closing {
+    text-align: center;
+    font-style: italic;
+    font-size: 20px;
+    color: var(--teal-dark);
+    margin: -32px 0 48px;
+}
+
+/* Our Story editor */
+.wsite-prow {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e8e8e4;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+.wsite-prow .admin-panel-input { flex: 1; width: auto; min-width: 0; font-family: 'Georgia', serif; }
+.wsite-prow textarea.admin-panel-input { resize: vertical; line-height: 1.5; }
+.wsite-prow .wsite-prow-short { flex: 0 0 150px; }
+.wsite-prow-btns { display: flex; align-items: center; gap: 6px; flex: none; }
+.wsite-srow { align-items: center; }
+.wsite-srow-src { display: flex; flex-direction: column; gap: 2px; flex: none; }
+.wsite-srow-now { margin: 0; }
+.wsite-about-preview {
+    background: var(--teal-light);
+    border-top: 4px solid var(--tangerine);
+    border-radius: 6px;
+    padding: 32px 28px;
+    overflow: hidden;
+}
+.wsite-about-preview .about-grid { grid-template-columns: 1fr; gap: 28px; margin-bottom: 36px; }
+.wsite-about-preview .about-stats { padding-top: 28px; }
+.wsite-about-preview .stat-number { font-size: 34px; }
+.wsite-about-preview .btn { pointer-events: none; }
+.wsite-about-preview .about-closing { margin: -12px 0 32px; }
+
 @media (max-width: 768px) {
     .wsite-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
     .wsite-two { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -6172,4 +6212,9 @@ body {
     .wsite-slot-row { flex-wrap: wrap; }
     .wsite-link-btn--danger { margin-left: 0; }
     .kids-section { padding: 0 24px 60px; }
+    .wsite-prow { flex-wrap: wrap; }
+    .wsite-prow .wsite-prow-short { flex: 1 1 100%; }
+    .wsite-prow .admin-panel-input { flex: 1 1 100%; }
+    .wsite-prow-btns { width: 100%; }
+    .wsite-about-preview { padding: 24px 18px; }
 }
