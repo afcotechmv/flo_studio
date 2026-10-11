@@ -6197,6 +6197,59 @@ body {
 .wsite-about-preview .btn { pointer-events: none; }
 .wsite-about-preview .about-closing { margin: -12px 0 32px; }
 
+/* Class groups (public page) */
+.classes-grid--grouped { display: block; }
+.class-group {
+    --group-color: var(--teal-dark);
+    --group-tint: var(--teal-light);
+    margin-bottom: 56px;
+}
+.class-group:last-child { margin-bottom: 0; }
+.class-group--tangerine { --group-color: var(--tangerine); --group-tint: var(--tangerine-light); }
+.class-group--coral { --group-color: #d9534a; --group-tint: #fceeec; }
+.class-group-head {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 22px 30px;
+    margin-bottom: 24px;
+    background: var(--group-tint);
+    border: 1px solid var(--group-color);
+    border-radius: 12px;
+}
+.class-group-icon { width: 68px; height: 68px; object-fit: contain; flex: none; }
+.class-group-name {
+    font-size: 26px;
+    font-weight: normal;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: var(--group-color);
+    margin: 0 0 8px;
+}
+.class-group-sub { font-size: 14px; letter-spacing: 1px; line-height: 1.6; color: var(--text-mid); margin: 0; }
+.class-group-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+
+/* Class groups (editor) */
+.wsite-grow { align-items: center; }
+.wsite-grow .wsite-prow-short { flex: 0 0 150px; }
+.wsite-grow .wsite-gcolor { flex: 0 0 120px; width: auto; }
+.wsite-grow-icon { width: 40px; height: 40px; object-fit: contain; flex: none; border-radius: 6px; }
+.wsite-grow-icon--ph { background: var(--teal-light); display: inline-block; }
+.wsite-grow-count { margin: 0; flex: 0 0 100%; padding-left: 52px; }
+.wsite-small-label { display: inline-block; cursor: pointer; }
+.wsite-gsel { margin-top: 6px; max-width: 220px; width: 100%; }
+
+/* Footer editor preview */
+.wsite-footer-preview {
+    background: var(--text-dark);
+    color: var(--white);
+    border-radius: 6px;
+    padding: 32px 28px 0;
+    overflow: hidden;
+}
+.wsite-footer-preview .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; padding-bottom: 28px; }
+.wsite-footer-preview a { pointer-events: none; }
+
 /* The Team */
 .tag-accent {
     border-color: var(--tangerine);
@@ -6428,6 +6481,16 @@ body.flo-lb-open { overflow: hidden; }
     .wsite-prow .admin-panel-input { flex: 1 1 100%; }
     .wsite-prow-btns { width: 100%; }
     .wsite-about-preview { padding: 24px 18px; }
+    .class-group { margin-bottom: 40px; }
+    .class-group-head { padding: 18px 20px; gap: 16px; }
+    .class-group-icon { width: 52px; height: 52px; }
+    .class-group-name { font-size: 20px; letter-spacing: 4px; }
+    .class-group-cards { grid-template-columns: 1fr; }
+    .wsite-grow .wsite-prow-short, .wsite-grow .wsite-gcolor { flex: 1 1 100%; }
+    .wsite-grow-count { padding-left: 0; }
+    .wsite-gsel { max-width: none; }
+    .wsite-footer-preview { padding: 24px 18px 0; }
+    .wsite-footer-preview .footer-top { grid-template-columns: minmax(0, 1fr); gap: 24px; }
     .past-event { padding: 22px 18px; }
     .past-gallery { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
     .flo-lightbox { padding: 64px 12px 56px; }

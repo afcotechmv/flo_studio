@@ -12,8 +12,8 @@
      not flash its defaults on repeat visits, and so the site still
      looks right if the database cannot be reached.
 
-   Stage 1 covers: page order, section visibility, hero.
-   Further sections are added here in later stages.
+   Covers: page order, section visibility, hero, classes, FLO Kids,
+   our story, the team, workshops & events and the footer.
    ========================================================= */
 (function () {
   'use strict';
@@ -39,7 +39,7 @@
     order: ['hero', 'classes', 'kids', 'about', 'instructors', 'workshops'],
     hidden: {},
     hero: {
-      tagline: 'Feel \u00B7 Look \u00B7 Own \u00B7 Mal\u00E9, Maldives',
+      tagline: 'Feel \u00B7 Look \u00B7 Own \u00B7 Hulhumal\u00E9, Maldives',
       titleLines: ['Feel good.', 'Look strong.', 'Own your journey.'],
       subtitle: 'A women-only studio for movement, strength,\nand mental wellbeing.',
       buttonLabel: 'View Classes',
@@ -48,6 +48,8 @@
       imageFade: 0.55
     },
     classes: {
+      "groupsOn": false,
+      "groups": [],
       "header": {
         "label": "What we offer",
         "title": "Find your flow.",
@@ -462,9 +464,9 @@
           "auto": ""
         },
         {
-          "value": "6",
+          "value": "",
           "label": "Expert instructors",
-          "auto": ""
+          "auto": "team"
         },
         {
           "value": "Hulhumalé",
@@ -909,6 +911,33 @@
         }
       ],
       "past": []
+    },
+    footer: {
+      brandName: 'FLO Studio',
+      tagline: 'Feel · Look · Own',
+      description: 'A women-only movement and wellness studio in Hulhumalé, Maldives. Every class, every session, every breath — held with care.',
+      addressHeading: 'Come find us.',
+      addressLines: ['2nd Floor, Placeholder Building', 'Hulhumalé, Maldives'],
+      mapLabel: 'Open in Maps →',
+      mapLink: 'https://maps.google.com',
+      contactHeading: 'Get in touch.',
+      contacts: [
+        { label: 'WhatsApp',  value: '+960 777 1234',      link: 'https://wa.me/9607771234' },
+        { label: 'Email',     value: 'hello@flostudio.mv', link: 'mailto:hello@flostudio.mv' },
+        { label: 'Instagram', value: '@flostudio.mv',      link: 'https://instagram.com/flostudio.mv' }
+      ],
+      hoursHeading: 'Studio hours.',
+      hours: [
+        { days: 'Sun — Thu',    time: '6:00 AM – 9:00 PM' },
+        { days: 'Sat',               time: '8:00 AM – 8:00 PM' },
+        { days: 'Friday closed',     time: '' }
+      ],
+      copyright: '© {year} FLO Studio. All rights reserved.',
+      legal: [
+        { label: 'Privacy Policy',     link: '#' },
+        { label: 'Studio Rules',       link: '#' },
+        { label: 'Terms & Conditions', link: '#' }
+      ]
     }
   };
 
@@ -973,6 +1002,7 @@
     mergeStory(stored, d);
     mergeTeam(stored, d);
     mergeEvents(stored, d);
+    mergeFooter(stored, d);
     return d;
   };
 
@@ -1008,8 +1038,41 @@
       buttonLink: str(c.buttonLink, 300, '#') || '#',
       waitlist: c.waitlist === true,
       highlight: c.highlight === true,
-      hidden: c.hidden === true
+      hidden: c.hidden === true,
+      groupId: str(c.groupId, 40, '')
     };
+  }
+
+  // Display groups (e.g. Grace, Align, Elevate): named headings that the
+  // class cards can be sorted under. A card belongs to at most one group.
+  FLO.GROUP_COLORS = [
+    { value: 'teal',      label: 'Teal' },
+    { value: 'tangerine', label: 'Tangerine' },
+    { value: 'coral',     label: 'Coral' }
+  ];
+  FLO.MAX_GROUPS = 8;
+
+  function mergeGroups(sc, target) {
+    if (Array.isArray(sc.groups)) {
+      var seen = {};
+      target.groups = sc.groups.map(function (g) {
+        if (!g || typeof g !== 'object') return null;
+        var name = str(g.name, 30, '').trim();
+        if (!name) return null;
+        var color = FLO.GROUP_COLORS.some(function (o) { return o.value === g.color; }) ? g.color : 'teal';
+        return { id: str(g.id, 40, '') || FLO.newId('g'), name: name, desc: str(g.desc, 200, '').trim(),
+                 color: color, icon: str(g.icon, 400, '') };
+      }).filter(function (g) {
+        if (!g || seen[g.id]) return false;
+        seen[g.id] = true;
+        return true;
+      }).slice(0, FLO.MAX_GROUPS);
+    }
+    target.groupsOn = sc.groupsOn === true;
+    // A card pointing at a group that no longer exists becomes ungrouped.
+    var ids = {};
+    target.groups.forEach(function (g) { ids[g.id] = true; });
+    target.cards.forEach(function (c) { if (c.groupId && !ids[c.groupId]) c.groupId = ''; });
   }
 
   // Classes and FLO Kids share one shape: a heading plus a list of cards.
@@ -1030,6 +1093,7 @@
         return true;
       }).slice(0, 24);
     }
+    if (key === 'classes') mergeGroups(sc, target);
   }
 
   /* ── Our Story: merge / validate ────────────────────── */
@@ -1588,6 +1652,42 @@
     '</div>';
   };
 
+  // The cards area of the Classes section. Without groups it is the plain
+  // grid of cards; with groups switched on, each group gets a heading.
+  FLO.classesBodyHTML = function (col) {
+    var esc = FLO.esc;
+    var visible = col.cards.filter(function (c) { return !c.hidden; });
+    if (!col.groupsOn || !col.groups.length) {
+      return { grouped: false, html: visible.map(FLO.classCardHTML).join('') };
+    }
+    var used = {};
+    var parts = [];
+    col.groups.forEach(function (g) {
+      var cards = visible.filter(function (c) { return c.groupId === g.id; });
+      if (!cards.length) return;
+      cards.forEach(function (c) { used[c.id] = true; });
+      var icon = FLO.safeImageUrl(g.icon);
+      var sub = g.desc || cards.map(function (c) { return c.name; }).join(' • ');
+      parts.push(
+        '<div class="class-group class-group--' + esc(g.color) + '">' +
+          '<div class="class-group-head">' +
+            (icon ? '<img class="class-group-icon" src="' + esc(icon) + '" alt="">' : '') +
+            '<div class="class-group-text">' +
+              '<h3 class="class-group-name">' + esc(g.name) + '</h3>' +
+              '<p class="class-group-sub">' + esc(sub) + '</p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="class-group-cards">' + cards.map(FLO.classCardHTML).join('') + '</div>' +
+        '</div>');
+    });
+    var rest = visible.filter(function (c) { return !used[c.id]; });
+    if (rest.length) {
+      parts.push('<div class="class-group class-group--plain"><div class="class-group-cards">' +
+        rest.map(FLO.classCardHTML).join('') + '</div></div>');
+    }
+    return { grouped: true, html: parts.join('') };
+  };
+
   /* ── FLO Kids card rendering ────────────────────────── */
   FLO.kidsCardHTML = function (c) {
     var esc = FLO.esc;
@@ -1622,7 +1722,116 @@
     return html + '</div></div>';
   };
 
+  /* ── Footer: merge / render ─────────────────────────── */
+  function mergeFooter(stored, d) {
+    var sf = stored.footer;
+    if (!sf || typeof sf !== 'object') return;
+    var t = d.footer;
+    t.brandName      = str(sf.brandName, 60, t.brandName);
+    t.tagline        = str(sf.tagline, 80, t.tagline);
+    t.description    = str(sf.description, 400, t.description);
+    t.addressHeading = str(sf.addressHeading, 60, t.addressHeading);
+    t.mapLabel       = str(sf.mapLabel, 40, t.mapLabel);
+    t.mapLink        = str(sf.mapLink, 400, t.mapLink);
+    t.contactHeading = str(sf.contactHeading, 60, t.contactHeading);
+    t.hoursHeading   = str(sf.hoursHeading, 60, t.hoursHeading);
+    t.copyright      = str(sf.copyright, 200, t.copyright);
+
+    if (Array.isArray(sf.addressLines)) {
+      t.addressLines = sf.addressLines.map(function (l) { return String(l == null ? '' : l).trim().slice(0, 100); })
+                                      .filter(Boolean).slice(0, 6);
+    }
+    if (Array.isArray(sf.contacts)) {
+      t.contacts = sf.contacts.map(function (x) {
+        return { label: String(x && x.label != null ? x.label : '').trim().slice(0, 40),
+                 value: String(x && x.value != null ? x.value : '').trim().slice(0, 100),
+                 link:  String(x && x.link  != null ? x.link  : '').trim().slice(0, 400) };
+      }).filter(function (x) { return x.label || x.value; }).slice(0, 6);
+    }
+    if (Array.isArray(sf.hours)) {
+      t.hours = sf.hours.map(function (x) {
+        return { days: String(x && x.days != null ? x.days : '').trim().slice(0, 60),
+                 time: String(x && x.time != null ? x.time : '').trim().slice(0, 60) };
+      }).filter(function (x) { return x.days || x.time; }).slice(0, 8);
+    }
+    if (Array.isArray(sf.legal)) {
+      t.legal = sf.legal.map(function (x) {
+        return { label: String(x && x.label != null ? x.label : '').trim().slice(0, 60),
+                 link:  String(x && x.link  != null ? x.link  : '').trim().slice(0, 400) };
+      }).filter(function (x) { return x.label; }).slice(0, 6);
+    }
+  }
+
+  // The inside of <footer>. Mirrors the original hard-coded markup.
+  FLO.footerHTML = function (f) {
+    var esc = FLO.esc;
+    function open(cls, link) {
+      var h = FLO.safeHref(link);
+      var ext = /^https?:/i.test(h);
+      return '<a href="' + esc(h) + '"' + (ext ? ' target="_blank" rel="noopener noreferrer"' : '') +
+             (cls ? ' class="' + cls + '"' : '') + '>';
+    }
+
+    var brand = (f.brandName || f.tagline || f.description)
+      ? '<div class="footer-brand">' +
+          (f.brandName ? '<div class="footer-logo">' + esc(f.brandName) + '</div>' : '') +
+          (f.tagline ? '<p class="footer-tagline">' + esc(f.tagline) + '</p>' : '') +
+          (f.description ? '<p class="footer-desc">' + esc(f.description) + '</p>' : '') +
+        '</div>'
+      : '';
+
+    var address = (f.addressHeading || f.addressLines.length || (f.mapLabel && f.mapLink))
+      ? '<div class="footer-contact">' +
+          (f.addressHeading ? '<p class="footer-heading">' + esc(f.addressHeading) + '</p>' : '') +
+          (f.addressLines.length ? '<p class="footer-address">' + f.addressLines.map(esc).join('<br>') + '</p>' : '') +
+          (f.mapLabel && f.mapLink ? open('footer-map-link', f.mapLink) + esc(f.mapLabel) + '</a>' : '') +
+        '</div>'
+      : '';
+
+    var reach = (f.contactHeading || f.contacts.length)
+      ? '<div class="footer-reach">' +
+          (f.contactHeading ? '<p class="footer-heading">' + esc(f.contactHeading) + '</p>' : '') +
+          '<div class="footer-links">' +
+            f.contacts.map(function (c) {
+              var inner = (c.label ? '<span class="footer-link-label">' + esc(c.label) + '</span>' : '') +
+                          (c.value ? '<span class="footer-link-value">' + esc(c.value) + '</span>' : '');
+              return c.link ? open('footer-link', c.link) + inner + '</a>'
+                            : '<div class="footer-link">' + inner + '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>'
+      : '';
+
+    var hours = (f.hoursHeading || f.hours.length)
+      ? '<div class="footer-hours">' +
+          (f.hoursHeading ? '<p class="footer-heading">' + esc(f.hoursHeading) + '</p>' : '') +
+          '<div class="footer-schedule">' +
+            f.hours.map(function (r) {
+              return '<div class="footer-schedule-row"><span>' + esc(r.days) + '</span>' +
+                     (r.time ? '<span>' + esc(r.time) + '</span>' : '') + '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>'
+      : '';
+
+    var year = (FLO.today ? FLO.today() : String(new Date().getFullYear())).slice(0, 4);
+    var copy = String(f.copyright || '').replace(/\{year\}/gi, year);
+
+    return '<div class="footer-top">' + brand + address + reach + hours + '</div>' +
+      '<div class="footer-bottom">' +
+        (copy ? '<p class="footer-copy">' + esc(copy) + '</p>' : '<p class="footer-copy"></p>') +
+        '<div class="footer-bottom-links">' +
+          f.legal.map(function (l) { return open('', l.link) + esc(l.label) + '</a>'; }).join('') +
+        '</div>' +
+      '</div>';
+  };
+
   /* ── Apply to the page ──────────────────────────────── */
+  function applyFooter(w) {
+    var footer = document.querySelector('footer.footer');
+    if (footer) footer.innerHTML = FLO.footerHTML(w.footer);
+  }
+
   function applyOrderAndVisibility(w) {
     var footer = document.querySelector('footer.footer');
     if (!footer || !footer.parentNode) return;
@@ -1675,10 +1884,9 @@
     }
     var grid = sec.querySelector('.classes-grid');
     if (grid) {
-      grid.innerHTML = w.classes.cards
-        .filter(function (c) { return !c.hidden; })
-        .map(FLO.classCardHTML)
-        .join('');
+      var body = FLO.classesBodyHTML(w.classes);
+      grid.classList.toggle('classes-grid--grouped', body.grouped);
+      grid.innerHTML = body.html;
     }
   }
 
@@ -1740,6 +1948,7 @@
       applyTeam(w);
       applyEvents(w);
       applyBanner(w);
+      applyFooter(w);
       applyStory(w);   // last: a number in the story row can count class and team cards
     } catch (err) {
       console.error('FLO: could not apply website content.', err);

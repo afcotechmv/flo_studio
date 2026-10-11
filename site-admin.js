@@ -3,9 +3,8 @@
    The "Website" area of the admin portal. Lets the signed-in
    administrator edit what visitors see on the public site.
 
-   Built so far: Hero, Classes, FLO Kids, Our Story, The Team, Workshops & Events, Page Order.
-   The other tabs are listed so the final structure is visible;
-   each is switched on in a later stage.
+   Tabs: Hero, Classes, FLO Kids, Our Story, The Team, Workshops & Events,
+   Footer and Page Order. A tab without "built: true" shows a placeholder.
 
    Every change is made on a draft copy and only goes live when
    the administrator presses Save. All text is escaped before it
@@ -24,7 +23,7 @@
     { key: 'story',  label: 'Our Story',           built: true },
     { key: 'team',   label: 'The Team',            built: true },
     { key: 'events', label: 'Workshops & Events',  built: true },
-    { key: 'footer', label: 'Footer' },
+    { key: 'footer', label: 'Footer',              built: true },
     { key: 'order',  label: 'Page Order',          built: true }
   ];
 
@@ -91,6 +90,7 @@
     if (key === 'story') return renderStory();
     if (key === 'team') return renderTeam();
     if (key === 'events') return renderEvents();
+    if (key === 'footer') return renderFooter();
     if (key === 'order') return renderOrder();
     renderPending(key);
   }
@@ -319,12 +319,82 @@
 
   function ensureClassesDraft() {
     if (!draft || draft.__tab !== activeTab) {
+      var src = FLO.website[cfg().key];
       draft = {
         __tab: activeTab, view: 'list', editId: null,
-        header: FLO.clone(FLO.website[cfg().key].header),
-        cards: FLO.clone(FLO.website[cfg().key].cards)
+        header: FLO.clone(src.header),
+        cards: FLO.clone(src.cards),
+        groups: FLO.clone(src.groups || []),
+        groupsOn: src.groupsOn === true
       };
     }
+  }
+
+  /* Display groups (Classes tab only) */
+  function usesGroups() { return activeTab === 'classes'; }
+
+  function groupOptions(selected) {
+    return '<option value="">No group</option>' + draft.groups.map(function (g) {
+      return '<option value="' + esc(g.id) + '"' + (g.id === selected ? ' selected' : '') + '>' + esc(g.name || 'Unnamed group') + '</option>';
+    }).join('');
+  }
+
+  function groupSelectHTML(c) {
+    if (!usesGroups() || !draft.groups.length) return '';
+    return '<select class="admin-panel-select wsite-gsel" data-gsel aria-label="Group for ' + esc(c.name) + '">' +
+      groupOptions(c.groupId || '') + '</select>';
+  }
+
+  function groupCount(g) {
+    return draft.cards.filter(function (c) { return c.groupId === g.id; }).length;
+  }
+
+  function groupsSectionHTML() {
+    if (!usesGroups()) return '';
+    var rows = draft.groups.map(function (g, i) {
+      var icon = FLO.safeImageUrl(g.icon);
+      var n = groupCount(g);
+      return '<div class="wsite-prow wsite-grow" data-gi="' + i + '">' +
+        (icon ? '<img class="wsite-grow-icon" src="' + esc(icon) + '" alt="">' : '<span class="wsite-grow-icon wsite-grow-icon--ph" aria-hidden="true"></span>') +
+        '<input type="text" class="admin-panel-input wsite-prow-short" data-gf="name" maxlength="30" aria-label="Group ' + (i + 1) + ' name" placeholder="Name, e.g. Grace" value="' + esc(g.name) + '">' +
+        '<select class="admin-panel-select wsite-gcolor" data-gf="color" aria-label="Group ' + (i + 1) + ' colour">' +
+          FLO.GROUP_COLORS.map(function (o) { return '<option value="' + o.value + '"' + (o.value === g.color ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') +
+        '</select>' +
+        '<input type="text" class="admin-panel-input" data-gf="desc" maxlength="200" aria-label="Group ' + (i + 1) + ' text" placeholder="Optional text. If empty, the class names are listed." value="' + esc(g.desc) + '">' +
+        '<span class="wsite-prow-btns">' +
+          '<label class="wsite-small wsite-small-label">' + (icon ? 'Change icon' : 'Add icon') +
+            '<input type="file" accept="image/png,image/jpeg,image/webp" data-gicon hidden></label>' +
+          (icon ? '<button type="button" class="wsite-small" data-gact="rmicon">Remove icon</button>' : '') +
+          '<button type="button" class="wsite-move" data-gact="up" aria-label="Move group ' + (i + 1) + ' up"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button type="button" class="wsite-move" data-gact="down" aria-label="Move group ' + (i + 1) + ' down"' + (i === draft.groups.length - 1 ? ' disabled' : '') + '>▼</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-gact="del">Delete</button>' +
+        '</span>' +
+        '<span class="wsite-hint wsite-grow-count" data-gcount>' + n + (n === 1 ? ' class' : ' classes') + '</span>' +
+      '</div>';
+    }).join('');
+
+    return '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Groups (' + draft.groups.length + ')</h4>' +
+        '<button type="button" class="btn-admin-add" id="wc-addgroup"' + (draft.groups.length >= FLO.MAX_GROUPS ? ' disabled' : '') + '>+ Add group</button></div>' +
+      '<p class="wsite-hint">Groups sort the class cards under headings, such as Grace, Align and Elevate. ' +
+        'Create the groups here, then choose a group for each class in the list below.</p>' +
+      '<div class="wsite-checks"><label><input type="checkbox" id="wc-groupson"' + (draft.groupsOn ? ' checked' : '') + '> Show groups on the public page</label></div>' +
+      '<p class="wsite-hint">Off: every class appears in one grid, exactly as before. On: each group appears with its own heading, and classes without a group follow at the end.</p>' +
+      (rows || '<p class="admin-empty-note">No groups yet.</p>');
+  }
+
+  // Keep the group names in the class rows current without redrawing the page
+  // (a redraw while typing would lose the cursor).
+  function refreshGroupLabels() {
+    panel.querySelectorAll('[data-gsel]').forEach(function (sel) {
+      var cur = sel.value;
+      sel.innerHTML = groupOptions(cur);
+      sel.value = cur;
+    });
+    panel.querySelectorAll('[data-gi]').forEach(function (row) {
+      var g = draft.groups[parseInt(row.getAttribute('data-gi'), 10)];
+      var el = row.querySelector('[data-gcount]');
+      if (g && el) { var n = groupCount(g); el.textContent = n + (n === 1 ? ' class' : ' classes'); }
+    });
   }
 
   function findCard(id) {
@@ -359,6 +429,7 @@
         '<span class="wsite-crow-main">' +
           '<span class="wsite-crow-name">' + esc(c.name) + '</span>' +
           '<span class="wsite-crow-type">' + esc(c.type) + '</span>' +
+          groupSelectHTML(c) +
           (badges ? '<span class="wsite-badges">' + badges + '</span>' : '') +
         '</span>' +
         '<span class="wsite-crow-btns">' +
@@ -382,6 +453,8 @@
           field('Title', 'The main heading.', '<input type="text" class="admin-panel-input" id="wc-title" maxlength="120" value="' + esc(h.title) + '">') +
           field('Sub-text', 'Line breaks are kept.', '<textarea class="admin-panel-input" id="wc-sub" rows="2" maxlength="300">' + esc(h.sub) + '</textarea>') +
         '</div>' +
+
+        groupsSectionHTML() +
 
         '<div class="wsite-subhead-row">' +
           '<h4 class="wsite-subhead">Cards (' + draft.cards.length + ')</h4>' +
@@ -413,8 +486,19 @@
       renderClassEditor();
     });
 
+    if (usesGroups()) wireGroups(touch);
+
     var listEl = panel.querySelector('.wsite-clist');
     if (listEl) {
+      listEl.addEventListener('change', function (e) {
+        if (!e.target.matches('[data-gsel]')) return;
+        var row = e.target.closest('[data-id]');
+        var card = findCard(row && row.getAttribute('data-id'));
+        if (!card) return;
+        card.groupId = e.target.value;
+        touch();
+        refreshGroupLabels();
+      });
       listEl.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-act]');
         if (!btn || btn.disabled) return;
@@ -459,6 +543,67 @@
     panel.querySelector('#wc-save').addEventListener('click', function (e) { saveClasses(e.currentTarget, statusEl); });
   }
 
+  function wireGroups(touch) {
+    var statusEl = panel.querySelector('#wc-status');
+    var on = panel.querySelector('#wc-groupson');
+    on.addEventListener('change', function (e) { draft.groupsOn = e.target.checked; touch(); });
+
+    panel.querySelector('#wc-addgroup').addEventListener('click', function () {
+      if (draft.groups.length >= FLO.MAX_GROUPS) return;
+      draft.groups.push({ id: FLO.newId('g'), name: '', desc: '', color: 'teal', icon: '' });
+      dirty = true;
+      renderClassList();
+      var names = panel.querySelectorAll('[data-gf="name"]');
+      if (names.length) names[names.length - 1].focus();
+    });
+
+    panel.querySelectorAll('[data-gi]').forEach(function (row) {
+      var i = parseInt(row.getAttribute('data-gi'), 10);
+      var g = draft.groups[i];
+
+      row.addEventListener('input', function (e) {
+        var f = e.target.getAttribute('data-gf');
+        if (f !== 'name' && f !== 'desc') return;
+        g[f] = e.target.value;
+        touch();
+        if (f === 'name') refreshGroupLabels();
+      });
+      row.addEventListener('change', function (e) {
+        if (e.target.getAttribute('data-gf') === 'color') { g.color = e.target.value; touch(); }
+      });
+      row.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-gact]');
+        if (!b || b.disabled) return;
+        var act = b.getAttribute('data-gact');
+        if (act === 'rmicon') { g.icon = ''; }
+        else if (act === 'del') {
+          var n = groupCount(g);
+          if (!window.confirm('Delete the group “' + (g.name || 'Unnamed group') + '”?' +
+              (n ? ' Its ' + n + (n === 1 ? ' class' : ' classes') + ' will stay on the page but no longer belong to a group.' : ''))) return;
+          draft.cards.forEach(function (c) { if (c.groupId === g.id) c.groupId = ''; });
+          draft.groups.splice(i, 1);
+        } else {
+          var j = act === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= draft.groups.length) return;
+          var t = draft.groups[i]; draft.groups[i] = draft.groups[j]; draft.groups[j] = t;
+        }
+        dirty = true;
+        renderClassList();
+      });
+      row.querySelector('[data-gicon]').addEventListener('change', async function (e) {
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        setStatus(statusEl, 'Uploading icon…', 'busy');
+        var res = await FLO.uploadImage(file, 'classes', { maxDim: 256, quality: 0.9 });
+        if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
+        g.icon = res.url;
+        dirty = true;
+        renderClassList();
+        setStatus(panel.querySelector('#wc-status'), 'Icon uploaded. Press Save changes to publish it.', 'ok');
+      });
+    });
+  }
+
   function classPreviewCard(c) {
     var pc = FLO.clone(c);
     pc.slots = pc.slots.filter(function (s) { return s.text.trim(); });
@@ -493,6 +638,10 @@
               field('Style', 'Shown in small capitals, e.g. Vinyasa Yoga.', '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(c.type) + '">') +
             '</div>' +
             field('Description', '', '<textarea class="admin-panel-input" id="wce-desc" rows="3" maxlength="400">' + esc(c.desc) + '</textarea>') +
+            (usesGroups() && draft.groups.length
+              ? field('Group', 'The heading this class appears under when groups are shown on the public page.',
+                  '<select class="admin-panel-select" id="wce-group">' + groupOptions(c.groupId || '') + '</select>')
+              : '') +
 
             '<div class="wsite-field">' +
               '<label class="wsite-label">Icon</label>' +
@@ -576,6 +725,8 @@
     var hl = panel.querySelector('#wce-highlight');
     if (hl) hl.addEventListener('change', function (e) { c.highlight = e.target.checked; touch(); });
     panel.querySelector('#wce-hidden').addEventListener('change', function (e) { c.hidden = e.target.checked; touch(); });
+    var grp = panel.querySelector('#wce-group');
+    if (grp) grp.addEventListener('change', function (e) { c.groupId = e.target.value; touch(); });
 
     // Slots
     var slotsEl = panel.querySelector('#wce-slots');
@@ -647,9 +798,22 @@
         return;
       }
     }
+    var groups = [];
+    if (usesGroups()) {
+      var names = {};
+      for (var gi = 0; gi < draft.groups.length; gi++) {
+        var g = draft.groups[gi];
+        var gname = String(g.name || '').trim();
+        if (!gname) { setStatus(statusEl, 'Every group needs a name (group ' + (gi + 1) + ').', 'err'); return; }
+        if (names[gname.toLowerCase()]) { setStatus(statusEl, 'Two groups are called “' + gname + '”. Please give them different names.', 'err'); return; }
+        names[gname.toLowerCase()] = true;
+        groups.push({ id: g.id, name: gname, desc: String(g.desc || '').trim(), color: g.color, icon: g.icon || '' });
+      }
+    }
     var cards = draft.cards.map(function (c) {
       return {
         id: c.id, icon: c.icon, name: c.name.trim(), type: c.type.trim(), desc: c.desc.trim(), price: c.price.trim(),
+        groupId: usesGroups() ? (c.groupId || '') : '',
         meta: c.meta, slotsLabel: c.slotsLabel.trim(),
         slots: c.slots.map(function (s) { return { text: s.text.trim(), status: s.status }; }).filter(function (s) { return s.text; }),
         buttonLabel: c.buttonLabel.trim(), buttonLink: String(c.buttonLink || '').trim() || '#',
@@ -663,6 +827,7 @@
       header: { label: draft.header.label.trim(), title: draft.header.title.trim(), sub: draft.header.sub.trim() },
       cards: cards
     };
+    if (usesGroups()) { next.classes.groups = groups; next.classes.groupsOn = draft.groupsOn === true; }
     var res = await FLO.saveWebsite(next);
     btn.disabled = false;
     if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
@@ -899,6 +1064,224 @@
       draft = null;
       renderStory();
       setStatus(panel.querySelector('#ws-status'), 'Saved. The public page is updated.', 'ok');
+    });
+  }
+
+  /* ── Footer editor ──────────────────────────────────── */
+  var FOOTER_LISTS = {
+    contacts: { max: 6, blank: function () { return { label: '', value: '', link: '' }; } },
+    hours:    { max: 8, blank: function () { return { days: '', time: '' }; } },
+    legal:    { max: 6, blank: function () { return { label: '', link: '' }; } }
+  };
+  var LINK_OK = /^(#|https?:\/\/|mailto:|tel:)/i;
+
+  function ensureFooterDraft() {
+    if (!draft || draft.__tab !== 'footer') {
+      draft = { __tab: 'footer', d: FLO.clone(FLO.website.footer) };
+    }
+    return draft.d;
+  }
+
+  // One editable list (contact links, opening hours, legal links).
+  function footerRows(kind, items, fields) {
+    var cfg = FOOTER_LISTS[kind];
+    var rows = items.map(function (it, i) {
+      return '<div class="wsite-prow" data-fk="' + kind + '" data-fi="' + i + '">' +
+        fields.map(function (f) {
+          return '<input type="text" class="admin-panel-input' + (f.short ? ' wsite-prow-short' : '') + '" data-ff="' + f.key + '" maxlength="' + f.max +
+                 '" aria-label="' + esc(f.aria) + ' ' + (i + 1) + '" placeholder="' + esc(f.ph) + '" value="' + esc(it[f.key]) + '">';
+        }).join('') +
+        '<span class="wsite-prow-btns">' +
+          '<button type="button" class="wsite-move" data-fact="up" aria-label="Move row ' + (i + 1) + ' up"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button type="button" class="wsite-move" data-fact="down" aria-label="Move row ' + (i + 1) + ' down"' + (i === items.length - 1 ? ' disabled' : '') + '>▼</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-fact="del">Delete</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+    return rows || '<p class="admin-empty-note">None.</p>';
+  }
+
+  function renderFooter() {
+    var d = ensureFooterDraft();
+
+    panel.innerHTML =
+      '<div class="portal-section wsite-card">' +
+        '<h3 class="portal-section-title">Footer</h3>' +
+        '<p class="portal-section-desc">The dark block at the bottom of every page: the studio’s address, contact links, opening hours and legal links.</p>' +
+
+        '<h4 class="wsite-subhead">Studio</h4>' +
+        '<div class="wsite-form">' +
+          '<div class="wsite-two">' +
+            field('Studio name', 'Shown large at the top left.', '<input type="text" class="admin-panel-input" id="wf-brand" maxlength="60" value="' + esc(d.brandName) + '">') +
+            field('Tagline', 'Small text under the name.', '<input type="text" class="admin-panel-input" id="wf-tagline" maxlength="80" value="' + esc(d.tagline) + '">') +
+          '</div>' +
+          field('Description', 'A short sentence about the studio.', '<textarea class="admin-panel-input" id="wf-desc" rows="3" maxlength="400">' + esc(d.description) + '</textarea>') +
+        '</div>' +
+
+        '<h4 class="wsite-subhead">Address</h4>' +
+        '<div class="wsite-form">' +
+          '<div class="wsite-two">' +
+            field('Heading', '', '<input type="text" class="admin-panel-input" id="wf-addrhead" maxlength="60" value="' + esc(d.addressHeading) + '">') +
+            field('Address', 'One line per row (up to 6).', '<textarea class="admin-panel-input" id="wf-addr" rows="3" maxlength="500">' + esc(d.addressLines.join('\n')) + '</textarea>') +
+          '</div>' +
+          '<div class="wsite-two">' +
+            field('Map link text', 'Leave empty to hide the map link.', '<input type="text" class="admin-panel-input" id="wf-maplabel" maxlength="40" value="' + esc(d.mapLabel) + '">') +
+            field('Map link', 'The Google Maps address of the studio, starting with https://', '<input type="text" class="admin-panel-input" id="wf-maplink" maxlength="400" value="' + esc(d.mapLink) + '">') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Contact links (' + d.contacts.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" data-fadd="contacts"' + (d.contacts.length >= FOOTER_LISTS.contacts.max ? ' disabled' : '') + '>+ Add contact</button></div>' +
+        '<div class="wsite-form">' +
+          field('Heading', '', '<input type="text" class="admin-panel-input" id="wf-contacthead" maxlength="60" value="' + esc(d.contactHeading) + '">') +
+        '</div>' +
+        '<p class="wsite-hint">Name, what is shown, and where it links. Use https://wa.me/960XXXXXXX for WhatsApp, mailto:name@example.com for email and https:// for Instagram.</p>' +
+        footerRows('contacts', d.contacts, [
+          { key: 'label', max: 40,  short: true, aria: 'Contact name', ph: 'e.g. WhatsApp' },
+          { key: 'value', max: 100, aria: 'Contact text', ph: 'Shown, e.g. +960 777 1234' },
+          { key: 'link',  max: 400, aria: 'Contact link', ph: 'https://… or mailto:…' }
+        ]) +
+
+        '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Studio hours (' + d.hours.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" data-fadd="hours"' + (d.hours.length >= FOOTER_LISTS.hours.max ? ' disabled' : '') + '>+ Add row</button></div>' +
+        '<div class="wsite-form">' +
+          field('Heading', '', '<input type="text" class="admin-panel-input" id="wf-hourshead" maxlength="60" value="' + esc(d.hoursHeading) + '">') +
+        '</div>' +
+        '<p class="wsite-hint">Leave the time empty for a row that stands alone, such as “Friday closed”.</p>' +
+        footerRows('hours', d.hours, [
+          { key: 'days', max: 60, short: true, aria: 'Days', ph: 'e.g. Sun — Thu' },
+          { key: 'time', max: 60, aria: 'Time', ph: 'e.g. 6:00 AM – 9:00 PM' }
+        ]) +
+
+        '<h4 class="wsite-subhead">Bottom line</h4>' +
+        '<div class="wsite-form">' +
+          field('Copyright text', 'Write {year} where the year belongs; it always shows the current year.', '<input type="text" class="admin-panel-input" id="wf-copy" maxlength="200" value="' + esc(d.copyright) + '">') +
+        '</div>' +
+        '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Legal links (' + d.legal.length + ')</h4>' +
+          '<button type="button" class="btn-admin-add" data-fadd="legal"' + (d.legal.length >= FOOTER_LISTS.legal.max ? ' disabled' : '') + '>+ Add link</button></div>' +
+        '<p class="wsite-hint">Use # while a page does not exist yet.</p>' +
+        footerRows('legal', d.legal, [
+          { key: 'label', max: 60,  short: true, aria: 'Link text', ph: 'e.g. Privacy Policy' },
+          { key: 'link',  max: 400, aria: 'Link address', ph: '#, https://… or mailto:…' }
+        ]) +
+
+        '<h4 class="wsite-subhead">Preview</h4>' +
+        '<div class="wsite-footer-preview" id="wf-preview"></div>' +
+
+        actions('wf') +
+      '</div>';
+
+    updateFooterPreview();
+    wireFooter();
+  }
+
+  function updateFooterPreview() {
+    var box = panel.querySelector('#wf-preview');
+    if (box) box.innerHTML = FLO.footerHTML(draft.d);
+  }
+
+  function wireFooter() {
+    var d = draft.d;
+    var statusEl = panel.querySelector('#wf-status');
+    function touch() { dirty = true; setStatus(statusEl, ''); updateFooterPreview(); }
+    function bind(id, fn) { panel.querySelector(id).addEventListener('input', function (e) { fn(e.target.value); touch(); }); }
+
+    bind('#wf-brand', function (v) { d.brandName = v; });
+    bind('#wf-tagline', function (v) { d.tagline = v; });
+    bind('#wf-desc', function (v) { d.description = v; });
+    bind('#wf-addrhead', function (v) { d.addressHeading = v; });
+    bind('#wf-addr', function (v) { d.addressLines = v.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 6); });
+    bind('#wf-maplabel', function (v) { d.mapLabel = v; });
+    bind('#wf-maplink', function (v) { d.mapLink = v; });
+    bind('#wf-contacthead', function (v) { d.contactHeading = v; });
+    bind('#wf-hourshead', function (v) { d.hoursHeading = v; });
+    bind('#wf-copy', function (v) { d.copyright = v; });
+
+    panel.querySelectorAll('[data-fk]').forEach(function (row) {
+      var list = d[row.getAttribute('data-fk')];
+      var i = parseInt(row.getAttribute('data-fi'), 10);
+      row.addEventListener('input', function (e) {
+        var f = e.target.getAttribute('data-ff');
+        if (!f) return;
+        list[i][f] = e.target.value;
+        touch();
+      });
+      row.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-fact]');
+        if (!b || b.disabled) return;
+        var act = b.getAttribute('data-fact');
+        if (act === 'del') list.splice(i, 1);
+        else {
+          var j = act === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= list.length) return;
+          var t = list[i]; list[i] = list[j]; list[j] = t;
+        }
+        dirty = true;
+        renderFooter();
+      });
+    });
+
+    panel.querySelectorAll('[data-fadd]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var kind = btn.getAttribute('data-fadd');
+        if (d[kind].length >= FOOTER_LISTS[kind].max) return;
+        d[kind].push(FOOTER_LISTS[kind].blank());
+        dirty = true;
+        renderFooter();
+        var rows = panel.querySelectorAll('[data-fk="' + kind + '"]');
+        var first = rows.length ? rows[rows.length - 1].querySelector('input') : null;
+        if (first) first.focus();
+      });
+    });
+
+    panel.querySelector('#wf-discard').addEventListener('click', function () {
+      if (dirty && !window.confirm('Discard your unsaved changes?')) return;
+      draft = null;
+      dirty = false;
+      renderFooter();
+    });
+
+    panel.querySelector('#wf-save').addEventListener('click', async function (e) {
+      var btn = e.currentTarget;
+      var bad = '';
+      if (d.mapLink.trim() && !LINK_OK.test(d.mapLink.trim())) bad = 'The map link must start with https://.';
+      d.contacts.forEach(function (c, k) {
+        if (!bad && c.link.trim() && !LINK_OK.test(c.link.trim())) bad = 'Contact link ' + (k + 1) + ' must start with https://, mailto:, tel: or #.';
+      });
+      d.legal.forEach(function (l, k) {
+        if (!bad && l.label.trim() && l.link.trim() && !LINK_OK.test(l.link.trim())) bad = 'Legal link ' + (k + 1) + ' must start with https://, mailto:, tel: or #.';
+      });
+      if (bad) { setStatus(statusEl, bad, 'err'); return; }
+
+      var footer = {
+        brandName: d.brandName.trim(),
+        tagline: d.tagline.trim(),
+        description: d.description.trim(),
+        addressHeading: d.addressHeading.trim(),
+        addressLines: d.addressLines.slice(),
+        mapLabel: d.mapLabel.trim(),
+        mapLink: d.mapLink.trim(),
+        contactHeading: d.contactHeading.trim(),
+        contacts: d.contacts.map(function (c) { return { label: c.label.trim(), value: c.value.trim(), link: c.link.trim() }; })
+                            .filter(function (c) { return c.label || c.value; }),
+        hoursHeading: d.hoursHeading.trim(),
+        hours: d.hours.map(function (r) { return { days: r.days.trim(), time: r.time.trim() }; })
+                      .filter(function (r) { return r.days || r.time; }),
+        copyright: d.copyright.trim(),
+        legal: d.legal.map(function (l) { return { label: l.label.trim(), link: l.link.trim() || '#' }; })
+                      .filter(function (l) { return l.label; })
+      };
+      btn.disabled = true;
+      setStatus(statusEl, 'Saving…', 'busy');
+      var next = FLO.clone(FLO.website);
+      next.footer = footer;
+      var res = await FLO.saveWebsite(next);
+      btn.disabled = false;
+      if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
+      dirty = false;
+      draft = null;
+      renderFooter();
+      setStatus(panel.querySelector('#wf-status'), 'Saved. The public page is updated.', 'ok');
     });
   }
 
