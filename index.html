@@ -1156,13 +1156,19 @@
                     <!-- ── VIEW: DASHBOARD ── -->
                     <section class="portal-view active" id="view-dashboard">
                         <div class="portal-view-header">
-                            <h2>Good morning, Sara.</h2>
+                            <h2 id="clientGreeting">Good morning, Sara.</h2>
                             <p class="portal-view-sub">Here's what's on your journey this week.</p>
+                        </div>
+
+                        <!-- Shown instead of the sample figures and bookings for a real account -->
+                        <div class="portal-section sample-empty">
+                            <h3 class="portal-section-title">Your classes</h3>
+                            <p class="admin-empty-note">You are not enrolled in any classes yet. Open the Enrolment tab to choose your classes.</p>
                         </div>
 
                         <!-- STAT CARDS -->
 
-                        <div class="portal-stats">
+                        <div class="portal-stats sample-only">
                             <div class="stat-card">
                                 <p class="stat-label">Enrolment</p>
                                 <p class="stat-value">Active</p>
@@ -1187,7 +1193,7 @@
                         </div>
 
                         <!-- UPCOMING CLASSES -->
-                        <div class="portal-section">
+                        <div class="portal-section sample-only">
                             <h3 class="portal-section-title">Upcoming Classes</h3>
                             <div class="booking-list">
                                 <div class="booking-item">
@@ -1237,8 +1243,10 @@
                             <!-- Child cards render here via JS -->
                             <div class="children-grid" id="childrenGrid">
 
+                                <p class="admin-empty-note sample-empty">No children added yet. Use &ldquo;+ Add Child&rdquo; to add a daughter aged 5&ndash;12; the studio approves each child.</p>
+
                                 <!-- DUMMY: Approved child -->
-                                <div class="child-card child-card--approved">
+                                <div class="child-card child-card--approved sample-only">
                                     <div class="child-avatar" style="background:#e8f4f1;">🌸</div>
                                     <div class="child-card-info">
                                         <p class="child-name">Amira</p>
@@ -1249,7 +1257,7 @@
                                 </div>
 
                                 <!-- DUMMY: Pending child -->
-                                <div class="child-card child-card--pending">
+                                <div class="child-card child-card--pending sample-only">
                                     <div class="child-avatar" style="background:#fdf3ee;">⭐</div>
                                     <div class="child-card-info">
                                         <p class="child-name">Yoosuf</p>
@@ -1273,14 +1281,18 @@
 
                         <!-- MY CLASSES SUB-TABS -->
                         <!-- Sara's tab is always shown. Child tabs added by JS when approved. -->
-                        <div class="my-classes-tabs" id="myClassesTabs">
+                        <div class="portal-section sample-empty">
+                            <p class="admin-empty-note">You have no classes yet. Once you are enrolled, your upcoming and past classes appear here.</p>
+                        </div>
+
+                        <div class="my-classes-tabs sample-only" id="myClassesTabs">
                             <button class="my-classes-tab active" data-classes-tab="sara">Sara</button>
                             <!-- Child tabs injected here by JS -->
                             <button class="my-classes-tab" data-classes-tab="amira">Amira</button>
                         </div>
 
                         <!-- SARA'S CLASSES -->
-                        <div class="my-classes-panel active" id="classes-panel-sara">
+                        <div class="my-classes-panel active sample-only" id="classes-panel-sara">
                             <div class="portal-section">
                                 <h3 class="portal-section-title">Upcoming</h3>
                                 <div class="booking-list">
@@ -1351,7 +1363,7 @@
                         </div>
 
                         <!-- AMIRA'S CLASSES (dummy approved child) -->
-                        <div class="my-classes-panel" id="classes-panel-amira">
+                        <div class="my-classes-panel sample-only" id="classes-panel-amira">
                             <div class="portal-section">
                                 <div class="child-classes-empty">
                                     <p class="child-classes-empty-name">Amira has not been enrolled in any classes yet.</p>
@@ -1643,9 +1655,10 @@
                                 <!-- CHILD SELECTOR -->
                                 <div class="kids-child-selector">
                                     <p class="kids-selector-label">Enrolling for:</p>
+                                    <p class="kids-sessions-note sample-empty">No children are on your account yet. Add a child from the Dashboard first; the studio approves each child before she can be enrolled.</p>
                                     <div class="kids-child-options" id="kidsChildOptions">
                                         <!-- Approved children injected by JS -->
-                                        <button class="kids-child-btn active" data-child="Amira">
+                                        <button class="kids-child-btn active sample-only" data-child="Amira">
                                             <span class="kids-child-avatar">🌸</span> Amira
                                         </button>
                                     </div>
@@ -1708,8 +1721,12 @@
                             <p class="portal-view-sub">Your current classes for this month.</p>
                         </div>
 
+                        <div class="portal-section sample-empty">
+                            <p class="admin-empty-note">You have no current enrolment. Choose your classes in the Enrolment tab.</p>
+                        </div>
+
                         <!-- CURRENT MONTH ENROLMENT -->
-                        <div class="portal-section">
+                        <div class="portal-section sample-only">
                             <div class="membership-card">
                                 <div class="membership-card-top">
                                     <div>
@@ -1753,7 +1770,9 @@
                         <div class="portal-section">
                             <h3 class="portal-section-title">Children</h3>
 
-                            <div class="child-membership-item">
+                            <p class="admin-empty-note sample-empty">No children on your account yet.</p>
+
+                            <div class="child-membership-item sample-only">
                                 <div class="child-avatar child-avatar--sm" style="background:#e8f4f1;">🌸</div>
                                 <div class="child-membership-info">
                                     <p class="child-membership-name">Amira</p>
@@ -1761,7 +1780,7 @@
                                 </div>
                             </div>
 
-                            <div class="child-membership-item">
+                            <div class="child-membership-item sample-only">
                                 <div class="child-avatar child-avatar--sm" style="background:#fdf3ee;">⭐</div>
                                 <div class="child-membership-info">
                                     <p class="child-membership-name">Yoosuf</p>
@@ -1771,7 +1790,7 @@
                         </div>
 
                         <!-- NEXT MONTH NOTICE -->
-                        <div class="portal-section">
+                        <div class="portal-section sample-only">
                             <div class="enrol-status-banner enrol-status--upcoming">
                                 <div class="enrol-status-left">
                                     <span class="enrol-status-dot"></span>
@@ -1798,15 +1817,15 @@
                             <div class="settings-form">
                                 <div class="settings-field">
                                     <label>Full Name</label>
-                                    <input type="text" value="Sara Rasheed" />
+                                    <input type="text" id="settingsName" value="Sara Rasheed" />
                                 </div>
                                 <div class="settings-field">
                                     <label>Email</label>
-                                    <input type="email" value="client@flo.mv" />
+                                    <input type="email" id="settingsEmail" value="client@flo.mv" />
                                 </div>
                                 <div class="settings-field">
                                     <label>Phone / WhatsApp</label>
-                                    <input type="text" value="+960 777 0000" />
+                                    <input type="text" id="settingsPhone" value="+960 777 0000" />
                                 </div>
                                 <div class="settings-field">
                                     <label>Emergency Contact</label>
@@ -1873,8 +1892,14 @@
                 </div>
             </nav>
 
+            <!-- Shown instead of the sample timetable for a real instructor account -->
+            <div class="portal-empty sample-empty">
+                <h2 id="instructorWelcome">Welcome.</h2>
+                <p>Your timetable, class rosters and attendance will appear here once the studio links your account to your classes.</p>
+            </div>
+
             <!-- PORTAL BODY -->
-            <div class="portal-body">
+            <div class="portal-body sample-only">
 
                 <!-- SIDEBAR -->
                 <aside class="portal-sidebar">

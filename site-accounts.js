@@ -174,6 +174,42 @@
     }
   }
 
+  function greeting() {
+    // Time of day in the Maldives, whatever the visitor's own timezone.
+    var hour = 12;
+    try {
+      hour = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Indian/Maldives', hour: '2-digit', hour12: false }).format(new Date()), 10);
+    } catch (e) { /* keep the default */ }
+    return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  }
+
+  // A real account starts with nothing of its own. The sample client's
+  // classes, children and figures are hidden until someone asks to preview
+  // them (so the studio can still try out the screens).
+  function sampleBanner(portal, on) {
+    var el = $('accountSampleBanner');
+    if (!el) {
+      addBanner(portal, 'accountSampleBanner', '', 'account-banner--sample');
+      el = $('accountSampleBanner');
+      if (!el) return;
+    }
+    el.innerHTML = '';
+    var text = document.createElement('span');
+    text.textContent = on
+      ? 'You are previewing example information (a sample client). It is not your own data.'
+      : 'This is a new account, so there is nothing here yet. Your classes and children will appear here once they are recorded for you.';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'account-banner-btn';
+    btn.textContent = on ? 'Hide example information' : 'Preview example information';
+    btn.addEventListener('click', function () {
+      portal.classList.toggle('sample-on', !on);
+      sampleBanner(portal, !on);
+    });
+    el.appendChild(text);
+    el.appendChild(btn);
+  }
+
   FLO.afterLogin = function (role) {
     if (role === 'admin') {
       FLO.account = null;
@@ -183,13 +219,26 @@
     var a = FLO.account;
     if (!a) return;
     var portal = portalFor(a.role);
+    var shown = a.full_name || a.email;
+    var first = (a.full_name || '').trim().split(/\s+/)[0] || shown;
 
     var nameEl = a.role === 'instructor' ? $('instructorNavName') : portal && portal.querySelector('.portal-nav-user');
-    if (nameEl) nameEl.textContent = a.full_name || a.email;
+    if (nameEl) nameEl.textContent = shown;
 
-    addBanner(portal, 'accountSampleBanner',
-      'Sample data: this portal currently shows example information while the studio is being set up. ' +
-      'Nothing shown here belongs to your account yet.', 'account-banner--sample');
+    if (a.role === 'client') {
+      var hi = $('clientGreeting'); if (hi) hi.textContent = greeting() + ', ' + first + '.';
+      var map = { settingsName: a.full_name, settingsEmail: a.email, settingsPhone: a.phone };
+      Object.keys(map).forEach(function (id) { var f = $(id); if (f) f.value = map[id] || ''; });
+      // Children shown or counted for this account start empty.
+      if (typeof children !== 'undefined' && Array.isArray(children)) children.length = 0;
+    } else {
+      var ig = $('instructorGreeting'); if (ig) ig.textContent = greeting() + ', ' + first + '.';
+      var iw = $('instructorWelcome'); if (iw) iw.textContent = 'Welcome, ' + first + '.';
+    }
+
+    portal.classList.add('real-account');
+    portal.classList.remove('sample-on');
+    sampleBanner(portal, false);
     applyAccountState();
     startWatching();
   };
