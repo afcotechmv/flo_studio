@@ -6197,6 +6197,61 @@ body {
 .wsite-about-preview .btn { pointer-events: none; }
 .wsite-about-preview .about-closing { margin: -12px 0 32px; }
 
+/* Accounts: sign-up, notices and the admin Accounts page */
+.login-switch { margin-top: 18px; font-size: 13px; color: var(--text-light); }
+.login-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: 'Georgia', serif;
+    font-size: 13px;
+    color: var(--teal);
+    text-decoration: underline;
+    cursor: pointer;
+}
+.login-link:hover { color: var(--teal-dark); }
+.login-hint--ok { color: var(--teal-dark); }
+.register-panel[hidden], #loginPanel[hidden] { display: none; }
+.register-role { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; text-align: left; font-size: 14px; color: var(--text-mid); }
+.register-role-label { flex: 0 0 100%; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-light); }
+.login-fields .register-role input { width: auto; margin-right: 6px; padding: 0; }
+.admin-badge[hidden] { display: none; }
+
+.account-banner {
+    padding: 12px 24px;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+    border-bottom: 1px solid #e8e8e4;
+    background: var(--teal-light);
+    color: var(--teal-dark);
+}
+.account-banner--pending { background: var(--tangerine-light); color: var(--text-dark); border-bottom-color: var(--tangerine); }
+.account-banner--sample { background: #f0f0ec; color: var(--text-mid); }
+.account-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translate(-50%, 20px);
+    max-width: min(520px, calc(100vw - 32px));
+    padding: 14px 20px;
+    background: var(--text-dark);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 3000;
+}
+.account-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.acc-search { width: 260px; max-width: 100%; }
+.acc-role { width: auto; min-width: 110px; }
+.acc-btn { padding: 8px 16px; font-size: 12px; }
+#aview-accounts .admin-section-toolbar { flex-wrap: wrap; gap: 12px; }
+#aview-accounts .admin-toolbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
 /* Class groups (public page) */
 .classes-grid--grouped { display: block; }
 .class-group {
@@ -6481,6 +6536,8 @@ body.flo-lb-open { overflow: hidden; }
     .wsite-prow .admin-panel-input { flex: 1 1 100%; }
     .wsite-prow-btns { width: 100%; }
     .wsite-about-preview { padding: 24px 18px; }
+    .account-banner { padding: 12px 16px; text-align: left; }
+    .acc-search { width: 100%; }
     .class-group { margin-bottom: 40px; }
     .class-group-head { padding: 18px 20px; gap: 16px; }
     .class-group-icon { width: 52px; height: 52px; }

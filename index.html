@@ -29,25 +29,40 @@
             <div class="modal-box">
                 <button class="modal-close" id="modalClose">✕</button>
                 <div class="modal-logo">FLO Studio</div>
-                <p class="modal-tagline">Welcome back.</p>
+                <p class="modal-tagline" id="loginTagline">Welcome back.</p>
 
-                <div class="login-role-tabs">
-                    <button class="role-tab active" data-role="client">Client</button>
-                    <button class="role-tab" data-role="instructor">Instructor</button>
-                    <button class="role-tab" data-role="admin">Admin</button>
+                <div id="loginPanel">
+                    <div class="login-role-tabs">
+                        <button class="role-tab active" data-role="client">Client</button>
+                        <button class="role-tab" data-role="instructor">Instructor</button>
+                        <button class="role-tab" data-role="admin">Admin</button>
+                    </div>
+
+                    <div class="login-fields">
+                        <input type="email" placeholder="Email address" id="loginEmail" autocomplete="username" />
+                        <input type="password" placeholder="Password" id="loginPassword" autocomplete="current-password" />
+                        <button class="btn btn-login-submit" id="loginSubmit">Enter →</button>
+                    </div>
+
+                    <p class="login-hint" id="loginHint"></p>
+                    <p class="login-switch">New to FLO? <button type="button" class="login-link" id="showRegister">Create an account</button></p>
                 </div>
 
-                <div class="login-fields">
-                    <input type="email" placeholder="Email address" id="loginEmail" />
-                    <input type="password" placeholder="Password" id="loginPassword" />
-                    <button class="btn btn-login-submit" id="loginSubmit">Enter →</button>
-                </div>
-
-                <p class="login-hint" id="loginHint"></p>
-                <div class="login-demo-creds">
-                    <p class="demo-creds-title">Demo logins</p>
-                    <p>client@flo.mv · client123</p>
-                    <p>instructor@flo.mv · instructor123</p>
+                <div class="register-panel" id="registerPanel" hidden>
+                    <div class="login-fields">
+                        <input type="text" placeholder="Full name" id="regName" autocomplete="name" maxlength="100" />
+                        <input type="tel" placeholder="Phone number" id="regPhone" autocomplete="tel" maxlength="30" />
+                        <input type="email" placeholder="Email address" id="regEmail" autocomplete="email" />
+                        <input type="password" placeholder="Password (at least 8 characters)" id="regPassword" autocomplete="new-password" />
+                        <div class="register-role" role="radiogroup" aria-label="I am registering as">
+                            <span class="register-role-label">I am registering as</span>
+                            <label><input type="radio" name="regRole" value="client" checked /> Client</label>
+                            <label><input type="radio" name="regRole" value="instructor" /> Instructor</label>
+                        </div>
+                        <button class="btn btn-login-submit" id="registerSubmit">Create account →</button>
+                    </div>
+                    <p class="login-hint" id="registerHint"></p>
+                    <p class="login-switch">Already registered? <button type="button" class="login-link" id="showLogin">Sign in</button></p>
                 </div>
             </div>
         </div>
@@ -2457,6 +2472,10 @@
                             <span class="sidebar-icon">⇄</span> Sub Requests
                             <span class="admin-badge" id="adminSubReqBadge">1</span>
                         </button>
+                        <button class="admin-sidebar-link" data-aview="accounts">
+                            <span class="sidebar-icon">☺</span> Accounts
+                            <span class="admin-badge" id="accountsBadge" hidden>0</span>
+                        </button>
                         <button class="admin-sidebar-link" data-aview="website">
                             <span class="sidebar-icon">✦</span> Website
                         </button>
@@ -2623,6 +2642,11 @@
                         </div>
                     </section>
 
+                    <!-- ── VIEW: ACCOUNTS (built by site-accounts.js) ── -->
+                    <section class="portal-view" id="aview-accounts">
+                        <!-- Populated by site-accounts.js when opened -->
+                    </section>
+
                     <!-- ── VIEW: WEBSITE (built by site-admin.js) ── -->
                     <section class="portal-view" id="aview-website">
                         <!-- Populated by site-admin.js when opened -->
@@ -2697,14 +2721,10 @@
         <script src="site-config.js"></script>
         <script src="site-content.js"></script>
         <script src="site-admin.js"></script>
+        <script src="site-accounts.js"></script>
         <script>
-            // ── DUMMY CREDENTIALS ──────────────────────────
-            // These are placeholder logins. In a real app, this
-            // would be checked against a server/database.
-            const USERS = {
-            'client@flo.mv':     { password: 'client123',     role: 'client' },
-            'instructor@flo.mv': { password: 'instructor123',  role: 'instructor' },
-            };
+            // Client, instructor and admin sign-in are all real (Supabase Auth);
+            // see site-config.js and site-accounts.js. No demo logins remain.
 
             // ── ELEMENTS ───────────────────────────────────
             const loginBtn    = document.getElementById('loginBtn');
@@ -2742,27 +2762,13 @@
             });
 
             // ── ROLE TABS ──────────────────────────────────
-            const demoCredentials = {
-            client:     { email: 'client@flo.mv',     password: 'client123' },
-            instructor: { email: 'instructor@flo.mv', password: 'instructor123' },
-            admin:      { email: '',                  password: '' }
-            };
-
             document.querySelectorAll('.role-tab').forEach(function(tab) {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
-
-                // Auto-fill credentials for the selected role
-                const role = this.dataset.role;
-                document.getElementById('loginEmail').value    = demoCredentials[role].email;
-                document.getElementById('loginPassword').value = demoCredentials[role].password;
+                loginHint.textContent = '';
             });
             });
-
-            // Pre-fill client credentials on page load (default tab is client)
-            document.getElementById('loginEmail').value    = demoCredentials.client.email;
-            document.getElementById('loginPassword').value = demoCredentials.client.password;
 
             // ── LOGIN LOGIC ────────────────────────────────
             loginSubmit.addEventListener('click', async function() {
@@ -2787,11 +2793,20 @@
                 }
                 user = { role: 'admin' };
             } else {
-                user = USERS[email];
-                if (!user || user.password !== password) {
-                    loginHint.textContent = 'Incorrect email or password.';
+                // Clients and instructors: real sign-in, then the account's approval status decides access.
+                if (!window.FLO || !FLO.accountLogin) {
+                    loginHint.textContent = 'The sign-in service did not load. Reload the page and try again.';
                     return;
                 }
+                loginHint.textContent = 'Signing in…';
+                loginSubmit.disabled = true;
+                const result = await FLO.accountLogin(email, password, activeTab ? activeTab.dataset.role : '');
+                loginSubmit.disabled = false;
+                if (!result.ok) {
+                    loginHint.textContent = result.message;
+                    return;
+                }
+                user = { role: result.role };
             }
 
             // Close modal
@@ -2818,6 +2833,7 @@
                 }
             }
             if (user.role === 'admin')      adminPortal.classList.add('portal-active');
+            if (window.FLO && FLO.afterLogin) FLO.afterLogin(user.role);
 
             // Change navbar login button to show who's in
             loginBtn.textContent = 'Logout';
@@ -3392,7 +3408,7 @@
 
             // ── CLIENT LOGOUT ───────────────────────────────
             document.getElementById('clientLogout').addEventListener('click', function() {
-            location.reload();
+            (window.FLO && FLO.signOut ? FLO.signOut() : Promise.resolve()).then(function() { location.reload(); });
             });
 
             // ══════════════════════════════════════════════════
@@ -3427,7 +3443,7 @@
 
             // ── INSTRUCTOR LOGOUT ──────────────────────────
             document.getElementById('instructorLogout').addEventListener('click', function() {
-                location.reload();
+                (window.FLO && FLO.signOut ? FLO.signOut() : Promise.resolve()).then(function() { location.reload(); });
             });
 
             // ── MY CLASSES: CLICK-TO-EXPAND ROSTER ─────────
