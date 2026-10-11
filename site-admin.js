@@ -335,6 +335,7 @@
           var l = FLO.studio.linkFor(c);
           if (l && l !== 'gone') c.classId = l.id;
         });
+        draft.cards.forEach(function (c) { if (c.classId) c.meta = FLO.studio.extraMeta(c.meta); });
       }
     }
   }
@@ -543,7 +544,7 @@
         c.classId = cl.id;
         c.name = cl.name;
         c.type = cl.type || '';
-        c.meta = cl.durationMin ? [cl.durationMin + ' min session'] : [];
+        c.meta = [];
         draft.cards.push(c);
         draft.view = 'edit';
         draft.editId = c.id;
@@ -712,7 +713,8 @@
             '<div class="wsite-two">' +
               field(cfg().nameLabel, linked ? 'Taken from the linked class. Rename it under Classes.' : '',
                 '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(linked ? linked.name : c.name) + '"' + (linked ? ' readonly' : '') + '>') +
-              field('Style', 'Shown in small capitals, e.g. Vinyasa Yoga.', '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(c.type) + '">') +
+              field('Style', linked ? 'Taken from the linked class. Change it under Classes, Edit.' : 'Shown in small capitals, e.g. Vinyasa Yoga.',
+                '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(linked ? linked.type : c.type) + '"' + (linked ? ' readonly' : '') + '>') +
             '</div>' +
             linkField +
             field('Description', '', '<textarea class="admin-panel-input" id="wce-desc" rows="3" maxlength="400">' + esc(c.desc) + '</textarea>') +
@@ -734,8 +736,10 @@
             '</div>' +
 
             '<div class="wsite-two">' +
-              field('Price', activeTab === 'classes' ? 'Shown when the card is hovered.' : '', '<input type="text" class="admin-panel-input" id="wce-price" maxlength="40" value="' + esc(c.price) + '">') +
-              field(cfg().metaLabel, cfg().metaHint, '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc(c.meta.join('\n')) + '</textarea>') +
+              field('Price', linked ? 'Taken from the linked class. Change it under Classes, Edit. Empty if the class has no price.' : (activeTab === 'classes' ? 'Shown when the card is hovered.' : ''),
+                '<input type="text" class="admin-panel-input" id="wce-price" maxlength="40" value="' + esc(linked ? FLO.studio.priceText(linked) : c.price) + '"' + (linked ? ' readonly' : '') + '>') +
+              field(cfg().metaLabel, linked ? 'One per line (up to 7). The duration line (' + esc(FLO.studio.durationLine(linked) || 'none set') + ') is added automatically from the class.' : cfg().metaHint,
+                '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc((linked ? FLO.studio.extraMeta(c.meta) : c.meta).join('\n')) + '</textarea>') +
             '</div>' +
 
             (linked
@@ -810,7 +814,7 @@
     if (lk) lk.addEventListener('change', function (e) {
       var cl = byClassId(e.target.value);
       c.classId = cl ? cl.id : '';
-      if (cl) { c.name = cl.name; if (!c.type) c.type = cl.type || ''; }
+      if (cl) { c.name = cl.name; c.type = cl.type || ''; c.meta = FLO.studio.extraMeta(c.meta); }
       dirty = true;
       renderClassEditor();
     });
@@ -911,7 +915,7 @@
         id: c.id, icon: c.icon, name: c.name.trim(), type: c.type.trim(), desc: c.desc.trim(), price: c.price.trim(),
         groupId: usesGroups() ? (c.groupId || '') : '',
         classId: activeTab === 'classes' ? (c.classId || '') : '',
-        meta: c.meta, slotsLabel: c.slotsLabel.trim(),
+        meta: (activeTab === 'classes' && c.classId) ? FLO.studio.extraMeta(c.meta) : c.meta, slotsLabel: c.slotsLabel.trim(),
         slots: c.slots.map(function (s) { return { text: s.text.trim(), status: s.status }; }).filter(function (s) { return s.text; }),
         buttonLabel: c.buttonLabel.trim(), buttonLink: String(c.buttonLink || '').trim() || '#',
         waitlist: c.waitlist, highlight: cfg().hasHighlight && c.highlight, hidden: c.hidden

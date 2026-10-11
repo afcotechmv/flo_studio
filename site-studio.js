@@ -506,13 +506,28 @@
 
   function offered(c) { return c.active !== false && c.showOnWebsite !== false && c.audience === 'adult'; }
 
+  // Facts that live on the class row and are therefore never typed twice:
+  // name, style, duration, price and times.
+  var DURATION_LINE = /^\s*\d+\s*(min|mins|minute|minutes)\b/i;
+  S.durationLine = function (cls) { return cls.durationMin ? cls.durationMin + ' min session' : ''; };
+  S.priceText = function (cls) {
+    return cls.priceMvr === null || cls.priceMvr === undefined || cls.priceMvr === '' ? '' : 'MVR ' + Number(cls.priceMvr).toLocaleString('en-US') + ' / month';
+  };
+  // The card's own hover lines without any duration line (that one is automatic).
+  S.extraMeta = function (meta) {
+    return (meta || []).filter(function (l) { return !DURATION_LINE.test(l); });
+  };
+
   function mergeCardWithClass(card, cls) {
     var d = S.deriveSlots(cls);
     var m = {};
     Object.keys(card).forEach(function (k) { m[k] = card[k]; });
     m.classId = cls.id;
     m.name = cls.name;
-    m.type = card.type || cls.type || '';
+    m.type = cls.type || '';
+    m.price = S.priceText(cls);
+    var dur = S.durationLine(cls);
+    m.meta = (dur ? [dur] : []).concat(S.extraMeta(card.meta)).slice(0, 8);
     m.slots = d.slots;
     m.slotsLabel = d.label;
     m.waitlist = card.waitlist === true || d.allFull;
@@ -529,8 +544,8 @@
   function autoCard(cls) {
     var d = S.deriveSlots(cls);
     return {
-      id: 'auto-' + cls.id, classId: cls.id, icon: '', name: cls.name, type: cls.type || '', desc: '', price: '',
-      meta: cls.durationMin ? [cls.durationMin + ' min session'] : [], slotsLabel: d.label, slots: d.slots,
+      id: 'auto-' + cls.id, classId: cls.id, icon: '', name: cls.name, type: cls.type || '', desc: '', price: S.priceText(cls),
+      meta: cls.durationMin ? [S.durationLine(cls)] : [], slotsLabel: d.label, slots: d.slots,
       buttonLabel: d.allFull ? 'Join Waitlist' : 'Join Class', buttonLink: '#', waitlist: d.allFull,
       highlight: cls.colorKey === 'tangerine', hidden: false, groupId: '', auto: true
     };
