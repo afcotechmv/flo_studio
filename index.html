@@ -242,7 +242,7 @@
 
                     <div class="child-form-row">
                         <div class="settings-field">
-                            <label>Price (Rf)</label>
+                            <label>Price (MVR)</label>
                             <input type="number" id="newProgramPrice" placeholder="1800" min="0" />
                         </div>
                         <div class="settings-field">
@@ -258,6 +258,10 @@
                     <div class="settings-field">
                         <label>Description (optional)</label>
                         <input type="text" id="newProgramDesc" placeholder="e.g. 2 ballet sessions + 1 aerial session per week" />
+                    </div>
+
+                    <div class="settings-field">
+                        <label class="studio-sched-check"><input type="checkbox" id="newProgramShow" checked /> Show on the public website (FLO Kids section)</label>
                     </div>
 
                     <div class="settings-field">
@@ -335,10 +339,6 @@
                         <div class="settings-field">
                             <label>Date of Birth</label>
                             <input type="date" id="instrDob" />
-                        </div>
-                        <div class="settings-field">
-                            <label>National ID</label>
-                            <input type="text" id="instrNationalId" placeholder="ID card number" />
                         </div>
                     </div>
 
@@ -1634,29 +1634,7 @@
                                 <p class="kids-step-label">Step 1 — Choose a program</p>
 
                                 <div class="kids-packages">
-                                    <div class="kids-package" id="pkgAerial">
-                                        <div class="kids-package-emoji">🪁</div>
-                                        <h3 class="kids-package-name">Aerial</h3>
-                                        <p class="kids-package-desc">Weekly aerial hammock class. Builds strength, coordination, and confidence.</p>
-                                        <div class="kids-package-includes">
-                                            <span>1 aerial session / week</span>
-                                            <span>One fixed day</span>
-                                        </div>
-                                        <p class="kids-package-price">Rf 1,000 / month</p>
-                                        <button class="btn-kids-select" data-package="aerial-only">Select Aerial →</button>
-                                    </div>
-
-                                    <div class="kids-package" id="pkgFusion">
-                                        <div class="kids-package-emoji">🩰</div>
-                                        <h3 class="kids-package-name">Fusion</h3>
-                                        <p class="kids-package-desc">Ballet grace meets aerial adventure. A beautiful combination for growing girls.</p>
-                                        <div class="kids-package-includes">
-                                            <span>2 ballet sessions / week</span>
-                                            <span>1 aerial session / week</span>
-                                        </div>
-                                        <p class="kids-package-price">Rf 1,800 / month</p>
-                                        <button class="btn-kids-select" data-package="fusion">Select Fusion →</button>
-                                    </div>
+                                    <!-- Filled in from the programs (see buildKidsPackages) -->
                                 </div>
                             </div>
 
@@ -3286,99 +3264,8 @@
             // ══════════════════════════════════════════════════
             // KIDS ENROLMENT — Enrolment tab
             // ══════════════════════════════════════════════════
-            let selectedKidsPackage = null;   // "aerial-only" | "fusion"
-            let selectedDayOptionGroup = null; // e.g. "sat" | "satmon" | "suntue"
-
-            // Build a human-readable day-option label from its slots
-            function dayOptionLabel(slots) {
-                return slots.map(s => s.day).join(' + ');
-            }
-
-            // Populate Aerial-only day options from data.js
-            function buildAerialOnlyOptions() {
-                const container = document.getElementById('kidsAerialOnlyOptions');
-                if (!container || typeof programSlots === 'undefined') return;
-
-                const aerialSlots = getProgramSlots('kids-aerial-only');
-                // Group slots by trackLabel (each group here = 1 slot = 1 fixed day)
-                const groups = {};
-                aerialSlots.forEach(function(slot) {
-                    const key = slot.trackLabel || slot.dayOptionGroup || slot.id;
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(slot);
-                });
-
-                let html = '';
-                Object.keys(groups).forEach(function(groupKey) {
-                    const slots = groups[groupKey];
-                    const instructor = getInstructor(slots[0].instructorId);
-                    const timeLabel = formatTime12h(slots[0].time);
-                    html += '<label class="kids-session-item">' +
-                                '<input type="radio" name="kidsDayOption" value="' + groupKey + '" />' +
-                                '<div class="kids-session-info">' +
-                                    '<span class="kids-session-name">' + slots[0].day + ' · ' + timeLabel + '</span>' +
-                                    '<span class="kids-session-meta">Aerial · with ' + (instructor ? instructor.name : '') + '</span>' +
-                                '</div>' +
-                            '</label>';
-                });
-                container.innerHTML = html;
-
-                // Wire change listeners on the freshly injected radios
-                container.querySelectorAll('input[name="kidsDayOption"]').forEach(function(input) {
-                    input.addEventListener('change', function() {
-                        selectedDayOptionGroup = this.value;
-                        checkKidsSelection();
-                    });
-                });
-            }
-
-            // Populate Fusion track options (ballet day-pair + paired aerial day) from data.js
-            function buildFusionTrackOptions() {
-                const container = document.getElementById('kidsFusionTrackOptions');
-                if (!container || typeof programSlots === 'undefined') return;
-
-                const balletSlots = getProgramSlotsForClass('kids-fusion', 'ballet');
-                const aerialSlots = getProgramSlotsForClass('kids-fusion', 'aerial-kids');
-
-                // Group ballet slots by their trackLabel
-                const trackGroups = {};
-                balletSlots.forEach(function(slot) {
-                    const key = slot.trackLabel || slot.dayOptionGroup || slot.id;
-                    if (!trackGroups[key]) trackGroups[key] = { ballet: [], aerial: [] };
-                    trackGroups[key].ballet.push(slot);
-                });
-                aerialSlots.forEach(function(slot) {
-                    const key = slot.trackLabel || slot.dayOptionGroup || slot.id;
-                    if (trackGroups[key]) trackGroups[key].aerial.push(slot);
-                });
-
-                const balletInstructor = getInstructor(balletSlots[0]?.instructorId);
-
-                let html = '';
-                Object.keys(trackGroups).forEach(function(groupKey) {
-                    const track = trackGroups[groupKey];
-                    const balletDays = track.ballet.map(s => s.day).join(' + ');
-                    const aerialSlot = track.aerial[0];
-                    const aerialInstructor = aerialSlot ? getInstructor(aerialSlot.instructorId) : null;
-
-                    html += '<label class="kids-session-item kids-track-item">' +
-                                '<input type="radio" name="kidsDayOption" value="' + groupKey + '" />' +
-                                '<div class="kids-session-info">' +
-                                    '<span class="kids-session-name">' + balletDays + ' Ballet · ' + (aerialSlot ? aerialSlot.day : '') + ' Aerial</span>' +
-                                    '<span class="kids-session-meta">Ballet with ' + (balletInstructor ? balletInstructor.name : '') +
-                                        (aerialInstructor ? ' · Aerial with ' + aerialInstructor.name : '') + '</span>' +
-                                '</div>' +
-                            '</label>';
-                });
-                container.innerHTML = html;
-
-                container.querySelectorAll('input[name="kidsDayOption"]').forEach(function(input) {
-                    input.addEventListener('change', function() {
-                        selectedDayOptionGroup = this.value;
-                        checkKidsSelection();
-                    });
-                });
-            }
+            let selectedKidsPackage = null;   // a program id, e.g. "kids-fusion"
+            let selectedDayOptionGroup = null; // the chosen track, e.g. "satmon"
 
             // Helper: "09:00" -> "9:00 AM"
             function formatTime12h(time24) {
@@ -3388,40 +3275,108 @@
                 return h12 + ':' + String(m).padStart(2, '0') + ' ' + period;
             }
 
-            // Build both option sets once on load (cheap, small data)
-            buildAerialOnlyOptions();
-            buildFusionTrackOptions();
+            // The programs on offer come from the studio data (the programs
+            // added under Programs in the admin), so a new program appears here
+            // by itself. Names, prices and sessions are escaped.
+            function kidsEmoji(p) {
+                const types = FLO.studio.programClasses(p).map(c => (c.type + ' ' + c.name).toLowerCase()).join(' ');
+                return types.indexOf('ballet') > -1 ? '🩰' : (types.indexOf('aerial') > -1 ? '🪁' : '✨');
+            }
 
-            // Program selection → go to step 2
-            document.querySelectorAll('.btn-kids-select').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    selectedKidsPackage = this.dataset.package; // "aerial-only" | "fusion"
-                    selectedDayOptionGroup = null;
-
-                    // Clear any previously checked radios from a prior visit
-                    document.querySelectorAll('input[name="kidsDayOption"]').forEach(r => r.checked = false);
-
-                    // Update step 2 label
-                    const label = selectedKidsPackage === 'aerial-only' ? 'Aerial' : 'Fusion — Ballet + Aerial';
-                    document.getElementById('kidsStep2Label').textContent = 'Step 2 — ' + label + ' · Choose day';
-
-                    // Show correct option set
-                    document.getElementById('kidsSessionsAerial').classList.add('hidden');
-                    document.getElementById('kidsSessionsFusion').classList.add('hidden');
-                    if (selectedKidsPackage === 'aerial-only') {
-                        document.getElementById('kidsSessionsAerial').classList.remove('hidden');
-                    } else {
-                        document.getElementById('kidsSessionsFusion').classList.remove('hidden');
-                    }
-
-                    // Switch steps
-                    document.getElementById('kidsStep1').classList.add('hidden');
-                    document.getElementById('kidsStep2').classList.remove('hidden');
-
-                    // Reset confirm button
-                    document.getElementById('btnKidsConfirm').disabled = true;
+            function buildKidsPackages() {
+                const box = document.querySelector('#kidsStep1 .kids-packages');
+                if (!box || !window.FLO || !FLO.studio) return;
+                const progs = FLO.studio.pickerPrograms();
+                if (!progs.length) {
+                    box.innerHTML = '<p class="admin-empty-note">No programs are open for enrolment yet.</p>';
+                    return;
+                }
+                box.innerHTML = progs.map(function(p) {
+                    const price = FLO.studio.programPriceText(p);
+                    return '<div class="kids-package" data-program="' + escHtml(p.id) + '">' +
+                        '<div class="kids-package-emoji">' + kidsEmoji(p) + '</div>' +
+                        '<h3 class="kids-package-name">' + escHtml(p.name) + '</h3>' +
+                        '<p class="kids-package-desc">' + escHtml(p.description || '') + '</p>' +
+                        '<div class="kids-package-includes">' +
+                            FLO.studio.programIncludes(p).map(t => '<span>' + escHtml(t) + '</span>').join('') +
+                        '</div>' +
+                        (price ? '<p class="kids-package-price">' + escHtml(price) + '</p>' : '') +
+                        '<button class="btn-kids-select" data-package="' + escHtml(p.id) + '">Select ' + escHtml(p.name) + ' →</button>' +
+                    '</div>';
+                }).join('');
+                box.querySelectorAll('.btn-kids-select').forEach(function(btn) {
+                    btn.addEventListener('click', function() { chooseKidsProgram(this.dataset.package); });
                 });
-            });
+            }
+
+            // Day options for one program: one choice per track.
+            function buildKidsOptions(programId) {
+                const container = document.getElementById('kidsFusionTrackOptions');
+                const program = getProgram(programId);
+                if (!container || !program) return;
+                const options = FLO.studio.programOptions(program);
+                if (!options.length) {
+                    container.innerHTML = '<p class="admin-empty-note">No sessions have been scheduled for this program yet.</p>';
+                    return;
+                }
+                container.innerHTML = options.map(function(o) {
+                    return '<label class="kids-session-item kids-track-item' + (o.full ? ' is-full' : '') + '">' +
+                        '<input type="radio" name="kidsDayOption" value="' + escHtml(o.key) + '"' + (o.full ? ' disabled' : '') + ' />' +
+                        '<div class="kids-session-info">' +
+                            '<span class="kids-session-name">' + escHtml(o.title) + (o.full ? ' · Full' : '') + '</span>' +
+                            '<span class="kids-session-meta">' + escHtml(o.meta) + '</span>' +
+                        '</div>' +
+                    '</label>';
+                }).join('');
+                container.querySelectorAll('input[name="kidsDayOption"]').forEach(function(input) {
+                    input.addEventListener('change', function() {
+                        selectedDayOptionGroup = this.value;
+                        checkKidsSelection();
+                    });
+                });
+            }
+
+            function chooseKidsProgram(programId) {
+                const program = getProgram(programId);
+                if (!program) return;
+                selectedKidsPackage = programId;
+                selectedDayOptionGroup = null;
+
+                const multi = FLO.studio.programClasses(program).length > 1;
+                const anyFixed = FLO.studio.programClasses(program).some(c => c.fixed);
+                document.getElementById('kidsStep2Label').textContent =
+                    'Step 2 — ' + program.name + ' · Choose ' + (multi ? 'track' : 'day');
+                document.querySelector('#kidsSessionsFusion .kids-sessions-label').textContent =
+                    multi ? 'Choose a weekly track:' : 'Choose a fixed weekly day:';
+                document.querySelector('#kidsSessionsFusion .kids-sessions-note').textContent = anyFixed
+                    ? 'Once chosen, your child stays with the same group of days. A single session can be changed for one week by request.'
+                    : 'A single session can be changed for one week by request.';
+                buildKidsOptions(programId);
+
+                document.getElementById('kidsSessionsAerial').classList.add('hidden');
+                document.getElementById('kidsSessionsFusion').classList.remove('hidden');
+                document.getElementById('kidsStep1').classList.add('hidden');
+                document.getElementById('kidsStep2').classList.remove('hidden');
+                document.getElementById('btnKidsConfirm').disabled = true;
+            }
+
+            function refreshKidsEnrol() {
+                buildKidsPackages();
+                if (selectedKidsPackage) {
+                    if (!getProgram(selectedKidsPackage) || getProgram(selectedKidsPackage).active === false) {
+                        document.getElementById('kidsStep2').classList.add('hidden');
+                        document.getElementById('kidsStep1').classList.remove('hidden');
+                        selectedKidsPackage = null; selectedDayOptionGroup = null;
+                    } else {
+                        const keep = selectedDayOptionGroup;
+                        buildKidsOptions(selectedKidsPackage);
+                        const again = keep && document.querySelector('input[name="kidsDayOption"][value="' + keep + '"]:not(:disabled)');
+                        if (again) again.checked = true; else selectedDayOptionGroup = null;
+                        checkKidsSelection();
+                    }
+                }
+            }
+            refreshKidsEnrol();
 
             // Back button
             document.getElementById('kidsBackBtn').addEventListener('click', function() {
@@ -3440,19 +3395,19 @@
             // Kids confirm button → payment modal
             document.getElementById('btnKidsConfirm').addEventListener('click', function() {
                 const childName = document.querySelector('.kids-child-btn.active')?.textContent.trim() || 'your child';
-                const program    = getProgram(selectedKidsPackage === 'aerial-only' ? 'kids-aerial-only' : 'kids-fusion');
+                const program    = getProgram(selectedKidsPackage);
                 const price      = program ? program.priceRf : 0;
                 const pkgName    = program ? program.name : '';
                 const summary    = document.getElementById('paymentSummary');
 
                 summary.innerHTML =
                     '<div class="payment-summary-row">' +
-                        '<span>' + childName + ' · ' + pkgName + ' program</span>' +
-                        '<span>Rf ' + price.toLocaleString() + '</span>' +
+                        '<span>' + escHtml(childName) + ' · ' + escHtml(pkgName) + ' program</span>' +
+                        '<span>MVR ' + price.toLocaleString() + '</span>' +
                     '</div>' +
                     '<div class="payment-summary-total">' +
                         '<span>Total</span>' +
-                        '<span>Rf ' + price.toLocaleString() + '</span>' +
+                        '<span>MVR ' + price.toLocaleString() + '</span>' +
                     '</div>';
 
                 document.getElementById('paymentModal').classList.add('modal-open');
@@ -4176,10 +4131,6 @@
                                     '<p class="admin-instr-detail-value">' + (instr.dob || '—') + '</p>' +
                                 '</div>' +
                                 '<div class="admin-instr-detail-field">' +
-                                    '<p class="admin-instr-detail-label">National ID</p>' +
-                                    '<p class="admin-instr-detail-value">' + (instr.nationalId || '—') + '</p>' +
-                                '</div>' +
-                                '<div class="admin-instr-detail-field">' +
                                     '<p class="admin-instr-detail-label">Qualifications</p>' +
                                     '<p class="admin-instr-detail-value">' + (instr.qualifications || '—') + '</p>' +
                                 '</div>' +
@@ -4260,7 +4211,6 @@
                     name:           document.getElementById('instrFullName'),
                     nickname:       document.getElementById('instrNickname'),
                     dob:            document.getElementById('instrDob'),
-                    nationalId:     document.getElementById('instrNationalId'),
                     phone:          document.getElementById('instrPhone'),
                     status:         document.getElementById('instrStatus'),
                     qualifications: document.getElementById('instrQualifications'),
@@ -4282,7 +4232,7 @@
             function resetInstructorModal() {
                 const f = instrModalFields();
                 f.name.value = ''; f.nickname.value = ''; f.dob.value = '';
-                f.nationalId.value = ''; f.phone.value = ''; f.status.value = 'active';
+                f.phone.value = ''; f.status.value = 'active';
                 f.qualifications.value = ''; f.experience.value = '';
                 f.bio.value = ''; f.note.textContent = ''; f.editingId.value = '';
                 document.getElementById('instrModalTitle').textContent = 'New Instructor';
@@ -4298,7 +4248,6 @@
                 f.name.value           = instr.name           || '';
                 f.nickname.value       = instr.nickname        || '';
                 f.dob.value            = instr.dob             || '';
-                f.nationalId.value     = instr.nationalId      || '';
                 f.phone.value          = instr.phone           || '';
                 f.status.value         = instr.status          || 'active';
                 f.qualifications.value = instr.qualifications  || '';
@@ -4339,7 +4288,6 @@
                         instr.name           = name;
                         instr.nickname       = f.nickname.value.trim()       || name;
                         instr.dob            = f.dob.value;
-                        instr.nationalId     = f.nationalId.value.trim();
                         instr.phone          = f.phone.value.trim();
                         instr.status         = f.status.value;
                         instr.qualifications = f.qualifications.value.trim();
@@ -4357,7 +4305,6 @@
                         name:           name,
                         nickname:       f.nickname.value.trim()       || name,
                         dob:            f.dob.value,
-                        nationalId:     f.nationalId.value.trim(),
                         phone:          f.phone.value.trim(),
                         status:         f.status.value,
                         qualifications: f.qualifications.value.trim(),
@@ -4896,7 +4843,7 @@
                     const slots = getProgramSlots(program.id);
 
                     let classListHtml = includedClasses.map(function(cls) {
-                        return '<li>' + cls.name + ' <span class="admin-program-class-type">(' + cls.type + ')</span></li>';
+                        return '<li>' + escHtml(cls.name) + ' <span class="admin-program-class-type">(' + escHtml(cls.type) + ')</span></li>';
                     }).join('');
 
                     // Slot summary grouped by class
@@ -4916,7 +4863,8 @@
                                     '<span class="admin-slot-day">' + slot.day + '</span>' +
                                     '<span class="admin-slot-time">' + formatTime12h(slot.time) + '</span>' +
                                     '<span class="admin-slot-instructor">' + (instr ? instr.name : '—') + '</span>' +
-                                    ((slot.trackLabel || slot.dayOptionGroup) ? '<span class="admin-slot-group">' + (slot.trackLabel || slot.dayOptionGroup) + '</span>' : '') +
+                                    ((slot.trackLabel || slot.dayOptionGroup) ? '<span class="admin-slot-group">' + escHtml(slot.trackLabel || slot.dayOptionGroup) + '</span>' : '') +
+                                    (slot.full ? '<span class="admin-slot-group">Full</span>' : '') +
                                 '</div>';
                             });
                             slotSummaryHtml += '</div>';
@@ -4925,15 +4873,15 @@
 
                     html += '<div class="admin-program-card" data-program-id="' + program.id + '">' +
                         '<div class="admin-program-card-top">' +
-                            '<p class="admin-program-card-name">' + program.name + '</p>' +
+                            '<p class="admin-program-card-name">' + escHtml(program.name) + '</p>' +
                             '<div class="admin-program-card-actions">' +
-                                '<p class="admin-program-card-price">Rf ' + program.priceRf.toLocaleString() + ' / ' + program.billingPeriod + '</p>' +
+                                '<p class="admin-program-card-price">MVR ' + Number(program.priceRf || 0).toLocaleString() + ' / ' + escHtml(program.billingPeriod) + (program.showOnWebsite === false ? ' · Not on website' : '') + '</p>' +
                                 '<button class="btn-admin-schedule" data-program-id="' + program.id + '">Schedule ▾</button>' +
                                 '<button class="btn-admin-edit-class" data-program-id="' + program.id + '">Edit</button>' +
                                 '<button class="btn-admin-delete-class" data-program-id="' + program.id + '">Delete</button>' +
                             '</div>' +
                         '</div>' +
-                        '<p class="admin-program-card-desc">' + (program.description || '') + '</p>' +
+                        '<p class="admin-program-card-desc">' + escHtml(program.description || '') + '</p>' +
                         '<ul class="admin-program-card-classes">' + classListHtml + '</ul>' +
                         '<div class="admin-program-slots-summary" id="prog-slot-summary-' + program.id + '">' + slotSummaryHtml + '</div>' +
                         '<div class="admin-schedule-panel" id="prog-schedule-panel-' + program.id + '"></div>' +
@@ -5025,7 +4973,8 @@
                                 '<span class="admin-slot-day">' + slot.day + '</span>' +
                                 '<span class="admin-slot-time">' + formatTime12h(slot.time) + '</span>' +
                                 '<span class="admin-slot-instructor">' + (instr ? instr.name : '—') + '</span>' +
-                                ((slot.trackLabel || slot.dayOptionGroup) ? '<span class="admin-slot-group">' + (slot.trackLabel || slot.dayOptionGroup) + '</span>' : '') +
+                                ((slot.trackLabel || slot.dayOptionGroup) ? '<span class="admin-slot-group">' + escHtml(slot.trackLabel || slot.dayOptionGroup) + '</span>' : '') +
+                                '<label class="studio-sched-check"><input type="checkbox" class="prog-slot-full" data-slot-id="' + escHtml(slot.id) + '"' + (slot.full ? ' checked' : '') + '> Full</label>' +
                                 '<button class="btn-slot-remove" data-program-id="' + programId + '" data-slot-id="' + slot.id + '">✕</button>' +
                             '</div>';
                         });
@@ -5091,6 +5040,14 @@
                             '<button class="btn-prog-schedule-done" data-program-id="' + programId + '">✓ Done — View Sessions</button>' +
                         '</div>' +
                     '</div>';
+
+                // Wire the Full marks
+                panel.querySelectorAll('.prog-slot-full').forEach(function(cb) {
+                    cb.addEventListener('change', function() {
+                        const slot = programSlots.find(s => s.id === this.getAttribute('data-slot-id'));
+                        if (slot) { slot.full = this.checked; refreshProgramSlotSummary(programId); }
+                    });
+                });
 
                 // Wire slot remove buttons
                 panel.querySelectorAll('.btn-slot-remove[data-program-id]').forEach(function(btn) {
@@ -5298,7 +5255,8 @@
                             '<span class="admin-slot-day">' + slot.day + '</span>' +
                             '<span class="admin-slot-time">' + formatTime12h(slot.time) + '</span>' +
                             '<span class="admin-slot-instructor">' + (instr ? instr.name : '—') + '</span>' +
-                            ((slot.trackLabel || slot.dayOptionGroup) ? '<span class="admin-slot-group">' + (slot.trackLabel || slot.dayOptionGroup) + '</span>' : '') +
+                            ((slot.trackLabel || slot.dayOptionGroup) ? '<span class="admin-slot-group">' + escHtml(slot.trackLabel || slot.dayOptionGroup) + '</span>' : '') +
+                            (slot.full ? '<span class="admin-slot-group">Full</span>' : '') +
                         '</div>';
                     });
                     html += '</div>';
@@ -5318,8 +5276,8 @@
                     const checked = selectedIds && selectedIds.includes(cls.id) ? ' checked' : '';
                     html += '<label class="admin-program-class-option">' +
                         '<input type="checkbox" name="programClass" value="' + cls.id + '"' + checked + ' /> ' +
-                        '<span class="admin-program-class-option-name">' + cls.name + '</span>' +
-                        '<span class="admin-program-class-option-meta">' + cls.type + ' · ' + cls.audience + '</span>' +
+                        '<span class="admin-program-class-option-name">' + escHtml(cls.name) + '</span>' +
+                        '<span class="admin-program-class-option-meta">' + escHtml(cls.type) + ' · ' + escHtml(cls.audience) + '</span>' +
                     '</label>';
                 });
                 picker.innerHTML = html || '<p class="admin-panel-empty">No classes defined yet. Create a class first.</p>';
@@ -5365,6 +5323,7 @@
                 document.getElementById('newProgramPrice').value = program.priceRf || '';
                 document.getElementById('newProgramBilling').value = program.billingPeriod || 'month';
                 document.getElementById('newProgramDesc').value = program.description || '';
+                document.getElementById('newProgramShow').checked = program.showOnWebsite !== false;
                 populateProgramClassPicker(program.classIds);
 
                 document.getElementById('editingProgramId').value = programId;
@@ -5390,6 +5349,7 @@
                 document.getElementById('newProgramPrice').value = '';
                 document.getElementById('newProgramBilling').value = 'month';
                 document.getElementById('newProgramDesc').value = '';
+                document.getElementById('newProgramShow').checked = true;
                 document.getElementById('newProgramFormNote').textContent = '';
                 document.getElementById('editingProgramId').value = '';
                 document.getElementById('newProgramModalTitle').textContent = 'New Program';
@@ -5431,6 +5391,7 @@
                         program.billingPeriod = billing;
                         program.description   = desc;
                         program.classIds      = selected;
+                        program.showOnWebsite = document.getElementById('newProgramShow').checked;
                     }
                     document.getElementById('newProgramModal').classList.remove('modal-open');
                     resetNewProgramForm();
@@ -5449,7 +5410,8 @@
                         billingPeriod: billing,
                         classIds: selected,
                         description: desc || '',
-                        active: true
+                        active: true,
+                        showOnWebsite: document.getElementById('newProgramShow').checked
                     };
                     programs.push(newProgram);
 
@@ -5906,7 +5868,7 @@
                     buildAdminInstructorList,
                     function() { buildAdminClassList('adult', 'adminClassListAdult'); },
                     function() { buildAdminClassList('kids', 'adminClassListKids'); },
-                    buildAdminProgramList, buildAdminDashboardStats, buildAdultEnrolGrid,
+                    buildAdminProgramList, buildAdminDashboardStats, buildAdultEnrolGrid, refreshKidsEnrol,
                     function() { fullScheduleBuilt = false; }
                 ].forEach(function(fn) {
                     try { fn(); } catch (err) { console.error('FLO studio refresh:', err); }

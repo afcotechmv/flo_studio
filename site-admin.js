@@ -298,12 +298,12 @@
     kids: {
       key: 'kids', folder: 'kids', previewClass: 'wsite-kids-preview',
       render: function (c) { return FLO.kidsCardHTML(c); },
-      noun: 'kids class', title: 'FLO Kids', nameLabel: 'Class name',
-      desc: 'The FLO Kids section of the public page: its heading and the cards for girls aged 5\u201312.',
+      noun: 'kids card', title: 'FLO Kids', nameLabel: 'Name',
+      desc: 'The FLO Kids section of the public page: its heading and one card for each kids program. A card linked to a program takes its name, style, price and times from that program (see Programs in the main menu).',
       metaLabel: 'Tags', metaHint: 'Small pill labels, one per line (up to 8), e.g. Ages 5\u201312.',
       previewHint: 'Shown as it appears on the public page.',
       hasHighlight: false,
-      fresh: { name: 'New kids class', price: 'MVR 1,000', meta: ['Ages 5\u201312'] }
+      fresh: { name: 'New kids card', price: 'MVR 1,000', meta: ['Ages 5\u201312'] }
     }
   };
   function cfg() { return COLL[activeTab]; }
@@ -329,47 +329,100 @@
       };
       // Cards saved before classes were connected are matched to their class by
       // name here, so that pressing Save changes stores the link for good.
-      if (activeTab === 'classes' && studioLive()) {
+      var lk0 = L();
+      if (lk0) {
         draft.cards.forEach(function (c) {
-          if (c.classId) return;
-          var l = FLO.studio.linkFor(c);
-          if (l && l !== 'gone') c.classId = l.id;
+          if (c[lk0.idKey]) return;
+          var rec = lk0.linkFor(c);
+          if (rec && rec !== 'gone') c[lk0.idKey] = rec.id;
         });
-        draft.cards.forEach(function (c) { if (c.classId) c.meta = FLO.studio.extraMeta(c.meta); });
+        draft.cards.forEach(function (c) { if (c[lk0.idKey]) c.meta = lk0.stripMeta(c.meta); });
       }
     }
   }
 
-  /* Link between a website card and a studio class (Classes tab only) */
+  /* Link between a website card and the studio record it shows.
+     Classes tab: a class. FLO Kids tab: a program. Everything the record
+     holds (name, style, price, times) is shown from it and is read-only on
+     the card. */
   function studioLive() { return !!(FLO.studio && FLO.studio.live); }
   function byClassId(id) {
     var list = studioLive() ? FLO.studio.adultClasses() : [];
     for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
     return null;
   }
+  function byProgramId(id) {
+    var list = FLO.studio.programs();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+  var CLASS_LINK = {
+    idKey: 'classId', noun: 'class', Noun: 'Class', plural: 'Classes', menu: 'Classes in the main menu',
+    by: byClassId,
+    all: function () { return FLO.studio.adultClasses(); },
+    linkFor: function (c) { return FLO.studio.linkFor(c); },
+    resolve: function (c) { return FLO.studio.resolveCard(c); },
+    unlisted: function (cards) { return FLO.studio.unlisted(cards); },
+    slots: function (o) { return FLO.studio.deriveSlots(o); },
+    price: function (o) { return FLO.studio.priceText(o); },
+    type: function (o) { return o.type || ''; },
+    stripMeta: function (m) { return FLO.studio.extraMeta(m); },
+    autoMeta: function (o) { return FLO.studio.durationLine(o); },
+    schedHelp: 'To change them, open Classes in the main menu and press Schedule on that class.',
+    styleHelp: 'Change it under Classes, Edit.',
+    priceHelp: 'Change it under Classes, Edit. Empty if the class has no price.',
+    blurb: 'These classes are live and already appear on the public page with basic details (name, style, times). Create a card to add a description, icon, price text or a group.',
+    sub: function (o) { return o.type || ''; }
+  };
+  var PROG_LINK = {
+    idKey: 'programId', noun: 'program', Noun: 'Program', plural: 'Programs', menu: 'Programs in the main menu',
+    by: byProgramId,
+    all: function () { return FLO.studio.programs(); },
+    linkFor: function (c) { return FLO.studio.programLinkFor(c); },
+    resolve: function (c) { return FLO.studio.resolveKidsCard(c); },
+    unlisted: function (cards) { return FLO.studio.unlistedPrograms(cards); },
+    slots: function (o) { return FLO.studio.deriveProgramSlots(o); },
+    price: function (o) { return FLO.studio.programPriceText(o); },
+    type: function (o) { return FLO.studio.programType(o); },
+    stripMeta: function (m) { return m; },
+    autoMeta: function () { return ''; },
+    schedHelp: 'To change them, open Programs in the main menu and press Schedule on that program.',
+    styleHelp: 'It lists the styles of the classes in the program. Change a class under Classes, Edit.',
+    priceHelp: 'Change it under Programs, Edit. Empty if the program has no price.',
+    blurb: 'These programs are live and already appear on the public page with basic details (name, style, price, times). Create a card to add a description, icon or tags.',
+    sub: function (o) { return FLO.studio.programType(o); }
+  };
+  // The link that applies to the open tab, or null (then cards are all written by hand).
+  function L() {
+    if (!studioLive()) return null;
+    if (activeTab === 'classes') return CLASS_LINK;
+    if (activeTab === 'kids' && FLO.studio.progLive) return PROG_LINK;
+    return null;
+  }
 
   function linkBadge(c) {
-    if (activeTab !== 'classes' || !studioLive()) return '';
-    var l = FLO.studio.linkFor(c);
-    if (l === 'gone') return '<span class="wsite-badge wsite-badge--warn">Class deleted: hidden on the page</span>';
-    if (!l) return '<span class="wsite-badge">Written by hand</span>';
-    var off = l.active === false || l.showOnWebsite === false;
+    var l = L();
+    if (!l) return '';
+    var rec = l.linkFor(c);
+    if (rec === 'gone') return '<span class="wsite-badge wsite-badge--warn">' + l.Noun + ' deleted: hidden on the page</span>';
+    if (!rec) return '<span class="wsite-badge">Written by hand</span>';
+    var off = rec.active === false || rec.showOnWebsite === false;
     return '<span class="wsite-badge ' + (off ? 'wsite-badge--warn' : 'wsite-badge--link') + '">' +
-      (off ? 'Linked to ' + esc(l.name) + ', switched off: hidden' : 'Linked to ' + esc(l.name)) + '</span>';
+      (off ? 'Linked to ' + esc(rec.name) + ', switched off: hidden' : 'Linked to ' + esc(rec.name)) + '</span>';
   }
 
   function unlistedHTML() {
-    if (activeTab !== 'classes' || !studioLive()) return '';
-    var list = FLO.studio.unlisted(draft.cards);
+    var l = L();
+    if (!l) return '';
+    var list = l.unlisted(draft.cards);
     if (!list.length) return '';
     return '<div class="wsite-unlisted">' +
-      '<h4 class="wsite-subhead">Classes without a card (' + list.length + ')</h4>' +
-      '<p class="wsite-hint">These classes are live and already appear on the public page with basic details (name, style, times). ' +
-        'Create a card to add a description, icon, price text or a group.</p>' +
-      list.map(function (cl) {
-        return '<div class="wsite-unlisted-row" data-ucls="' + esc(cl.id) + '">' +
-          '<span class="wsite-crow-name">' + esc(cl.name) + '</span>' +
-          '<span class="wsite-crow-type">' + esc(cl.type || '') + '</span>' +
+      '<h4 class="wsite-subhead">' + l.plural + ' without a card (' + list.length + ')</h4>' +
+      '<p class="wsite-hint">' + esc(l.blurb) + '</p>' +
+      list.map(function (rec) {
+        return '<div class="wsite-unlisted-row" data-ucls="' + esc(rec.id) + '">' +
+          '<span class="wsite-crow-name">' + esc(rec.name) + '</span>' +
+          '<span class="wsite-crow-type">' + esc(l.sub(rec)) + '</span>' +
           '<button type="button" class="wsite-small" data-ucreate>Create card</button>' +
         '</div>';
       }).join('') +
@@ -538,12 +591,13 @@
 
     panel.querySelectorAll('[data-ucreate]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var cl = byClassId(btn.closest('[data-ucls]').getAttribute('data-ucls'));
+        var lk1 = L();
+        var cl = lk1 && lk1.by(btn.closest('[data-ucls]').getAttribute('data-ucls'));
         if (!cl) return;
         var c = newCard();
-        c.classId = cl.id;
+        c[lk1.idKey] = cl.id;
         c.name = cl.name;
-        c.type = cl.type || '';
+        c.type = lk1.type(cl);
         c.meta = [];
         draft.cards.push(c);
         draft.view = 'edit';
@@ -670,7 +724,8 @@
   }
 
   function classPreviewCard(c) {
-    var pc = FLO.clone(activeTab === 'classes' && studioLive() ? FLO.studio.resolveCard(c) : c);
+    var lkp = L();
+    var pc = FLO.clone(lkp ? lkp.resolve(c) : c);
     pc.slots = pc.slots.filter(function (s) { return s.text.trim(); });
     pc.buttonLink = '#';
     return pc;
@@ -680,18 +735,19 @@
     var c = findCard(draft.editId);
     if (!c) { draft.view = 'list'; return renderClassList(); }
     var hasIcon = !!FLO.safeImageUrl(c.icon);
-    var linked = activeTab === 'classes' && studioLive() && c.classId ? byClassId(c.classId) : null;
+    var lk = L();
+    var linked = lk && c[lk.idKey] ? lk.by(c[lk.idKey]) : null;
     var linkField = '';
-    if (activeTab === 'classes' && studioLive()) {
-      linkField = field('Linked class',
-        'Ties this card to a class under Classes in the main menu. The name and the time slots then come from that class and follow any change to its schedule.',
+    if (lk) {
+      linkField = field('Linked ' + lk.noun,
+        'Ties this card to a ' + lk.noun + ' under ' + lk.menu + '. The name, style, price and time slots then come from that ' + lk.noun + ' and follow any change to it.',
         '<select class="admin-panel-select" id="wce-class"><option value="">None: a card written by hand</option>' +
-          FLO.studio.adultClasses().map(function (cl) {
-            return '<option value="' + esc(cl.id) + '"' + (cl.id === c.classId ? ' selected' : '') + '>' + esc(cl.name) +
+          lk.all().map(function (cl) {
+            return '<option value="' + esc(cl.id) + '"' + (cl.id === c[lk.idKey] ? ' selected' : '') + '>' + esc(cl.name) +
               (cl.active === false ? ' (inactive)' : '') + '</option>';
           }).join('') + '</select>');
     }
-    var derived = linked ? FLO.studio.deriveSlots(linked) : null;
+    var derived = linked ? lk.slots(linked) : null;
 
     var slotRows = c.slots.map(function (s, i) {
       return '<div class="wsite-slot-row" data-i="' + i + '">' +
@@ -711,10 +767,10 @@
         '<div class="wsite-grid">' +
           '<div class="wsite-form">' +
             '<div class="wsite-two">' +
-              field(cfg().nameLabel, linked ? 'Taken from the linked class. Rename it under Classes.' : '',
+              field(cfg().nameLabel, linked ? 'Taken from the linked ' + lk.noun + '. Rename it under ' + lk.plural + '.' : '',
                 '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(linked ? linked.name : c.name) + '"' + (linked ? ' readonly' : '') + '>') +
-              field('Style', linked ? 'Taken from the linked class. Change it under Classes, Edit.' : 'Shown in small capitals, e.g. Vinyasa Yoga.',
-                '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(linked ? linked.type : c.type) + '"' + (linked ? ' readonly' : '') + '>') +
+              field('Style', linked ? 'Taken from the linked ' + lk.noun + '. ' + lk.styleHelp : 'Shown in small capitals, e.g. Vinyasa Yoga.',
+                '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(linked ? lk.type(linked) : c.type) + '"' + (linked ? ' readonly' : '') + '>') +
             '</div>' +
             linkField +
             field('Description', '', '<textarea class="admin-panel-input" id="wce-desc" rows="3" maxlength="400">' + esc(c.desc) + '</textarea>') +
@@ -736,17 +792,17 @@
             '</div>' +
 
             '<div class="wsite-two">' +
-              field('Price', linked ? 'Taken from the linked class. Change it under Classes, Edit. Empty if the class has no price.' : (activeTab === 'classes' ? 'Shown when the card is hovered.' : ''),
-                '<input type="text" class="admin-panel-input" id="wce-price" maxlength="40" value="' + esc(linked ? FLO.studio.priceText(linked) : c.price) + '"' + (linked ? ' readonly' : '') + '>') +
-              field(cfg().metaLabel, linked ? 'One per line (up to 7). The duration line (' + esc(FLO.studio.durationLine(linked) || 'none set') + ') is added automatically from the class.' : cfg().metaHint,
-                '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc((linked ? FLO.studio.extraMeta(c.meta) : c.meta).join('\n')) + '</textarea>') +
+              field('Price', linked ? 'Taken from the linked ' + lk.noun + '. ' + lk.priceHelp : (activeTab === 'classes' ? 'Shown when the card is hovered.' : ''),
+                '<input type="text" class="admin-panel-input" id="wce-price" maxlength="40" value="' + esc(linked ? lk.price(linked) : c.price) + '"' + (linked ? ' readonly' : '') + '>') +
+              field(cfg().metaLabel, linked && lk.autoMeta(linked) ? 'One per line (up to 7). The duration line (' + esc(lk.autoMeta(linked)) + ') is added automatically from the class.' : (linked && activeTab === 'classes' ? 'One per line (up to 7). The duration line is added automatically from the class once it has a duration.' : cfg().metaHint),
+                '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc((linked ? lk.stripMeta(c.meta) : c.meta).join('\n')) + '</textarea>') +
             '</div>' +
 
             (linked
               ? '<div class="wsite-field">' +
                   '<label class="wsite-label">Time slots</label>' +
                   '<p class="wsite-hint">These come from the schedule of ' + esc(linked.name) + ' and update by themselves. ' +
-                    'To change them, open Classes in the main menu and press Schedule on that class. A slot marked Full there is greyed out here.</p>' +
+                    esc(lk.schedHelp) + ' A slot marked Full there is greyed out here.</p>' +
                   '<div class="wsite-readslots">' + (derived.slots.length
                     ? derived.slots.map(function (sl) { return '<span class="wsite-readslot' + (sl.status === 'full' ? ' is-full' : '') + '">' + esc(sl.text) + '</span>'; }).join('')
                     : '<span class="wsite-hint">No times yet. The card shows \u201C' + esc(derived.label) + '\u201D.</span>') + '</div>' +
@@ -812,9 +868,10 @@
     if (panel.querySelector('#wce-slotslabel')) bind('#wce-slotslabel', function (v) { c.slotsLabel = v; });
     var lk = panel.querySelector('#wce-class');
     if (lk) lk.addEventListener('change', function (e) {
-      var cl = byClassId(e.target.value);
-      c.classId = cl ? cl.id : '';
-      if (cl) { c.name = cl.name; c.type = cl.type || ''; c.meta = FLO.studio.extraMeta(c.meta); }
+      var lk2 = L();
+      var cl = lk2 && lk2.by(e.target.value);
+      c[lk2.idKey] = cl ? cl.id : '';
+      if (cl) { c.name = cl.name; c.type = lk2.type(cl); c.meta = lk2.stripMeta(c.meta); }
       dirty = true;
       renderClassEditor();
     });
@@ -915,7 +972,8 @@
         id: c.id, icon: c.icon, name: c.name.trim(), type: c.type.trim(), desc: c.desc.trim(), price: c.price.trim(),
         groupId: usesGroups() ? (c.groupId || '') : '',
         classId: activeTab === 'classes' ? (c.classId || '') : '',
-        meta: (activeTab === 'classes' && c.classId) ? FLO.studio.extraMeta(c.meta) : c.meta, slotsLabel: c.slotsLabel.trim(),
+        programId: activeTab === 'kids' ? (c.programId || '') : '',
+        meta: (L() && c[L().idKey]) ? L().stripMeta(c.meta) : c.meta, slotsLabel: c.slotsLabel.trim(),
         slots: c.slots.map(function (s) { return { text: s.text.trim(), status: s.status }; }).filter(function (s) { return s.text; }),
         buttonLabel: c.buttonLabel.trim(), buttonLink: String(c.buttonLink || '').trim() || '#',
         waitlist: c.waitlist, highlight: cfg().hasHighlight && c.highlight, hidden: c.hidden

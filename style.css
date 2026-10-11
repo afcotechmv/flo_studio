@@ -6647,3 +6647,7 @@ body.flo-lb-open { overflow: hidden; }
     .studio-sched-row > .settings-select:nth-child(3) { grid-column: 1 / -1; }
     .studio-sync { left: 8px; right: 8px; bottom: 8px; max-width: none; }
 }
+
+/* Stage 3: a track whose sessions are full cannot be chosen */
+.kids-session-item.is-full { opacity: .55; cursor: not-allowed; }
+.admin-panel-slot-row .studio-sched-check { margin: 0 .5rem; white-space: nowrap; }

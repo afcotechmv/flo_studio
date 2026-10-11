@@ -377,6 +377,7 @@
       "cards": [
         {
           "id": "kids-fly",
+          "programId": "kids-aerial-only",
           "icon": "images/class-icons/fly.png",
           "name": "Fly",
           "type": "Aerial for Girls",
@@ -406,6 +407,7 @@
         },
         {
           "id": "kids-fusion",
+          "programId": "kids-fusion",
           "icon": "images/class-icons/fusion.png",
           "name": "Fusion",
           "type": "Ballet & Aerial",
@@ -1050,7 +1052,8 @@
       hidden: c.hidden === true,
       groupId: str(c.groupId, 40, ''),
       // The studio class this card is tied to (see site-studio.js); '' = a card written by hand.
-      classId: str(c.classId, 60, '')
+      classId: str(c.classId, 60, ''),
+      programId: str(c.programId, 60, '')
     };
   }
 

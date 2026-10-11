@@ -4,7 +4,8 @@
 
    How it fits together
    - data.js still defines the in-memory arrays (rooms, tracks,
-     instructors, classes, classSlots) that the portals use. This
+     instructors, classes, classSlots, programs, programSlots) that the
+     portals use. This
      file replaces their contents with the real rows from Supabase
      and keeps them in step when the administrator makes changes.
    - Public read: anyone may read the public columns. The result is
@@ -27,6 +28,7 @@
 
   var S = (FLO.studio = {
     live: false,        // real rows (or a cached copy of them) are in the arrays
+    progLive: false,    // the same, for programs (needs flo_stage3_programs.sql)
     canWrite: false,    // administrator data loaded; changes are saved
     error: ''           // last load or save problem, in words
   });
@@ -44,6 +46,7 @@
     return {
       rooms: rooms, tracks: tracks, instructors: instructors,
       classes: classes, classSlots: classSlots,
+      programs: typeof programs !== 'undefined' ? programs : [],
       programSlots: typeof programSlots !== 'undefined' ? programSlots : []
     };
   }
@@ -96,7 +99,7 @@
     var privBy = {};
     (priv || []).forEach(function (p) { privBy[p.instructor_id] = p; });
 
-    return {
+    var out = {
       rooms: R.rooms.map(function (r) { return { id: r.id, name: clean(r.name) }; }),
       tracks: R.tracks.map(function (t) {
         return { id: t.id, name: clean(t.name), label: clean(t.label),
@@ -107,7 +110,7 @@
         return {
           id: i.id, name: clean(i.name), nickname: clean(i.nickname || i.name), bio: clean(i.bio),
           status: ['active', 'on-leave', 'inactive'].indexOf(i.status) > -1 ? i.status : 'active',
-          phone: clean(p.phone), dob: clean(p.dob), nationalId: clean(p.national_id),
+          phone: clean(p.phone), dob: clean(p.dob),
           qualifications: clean(p.qualifications), experience: clean(p.experience)
         };
       }),
@@ -132,6 +135,36 @@
         };
       })
     };
+    // Programs are optional: absent until flo_stage3_programs.sql has been run.
+    if (R.programs && R.program_slots) {
+      var classOk = {};
+      out.classes.forEach(function (c) { classOk[c.id] = true; });
+      var progs = R.programs.filter(okId);
+      var progOk = {};
+      progs.forEach(function (p) { progOk[p.id] = true; });
+      out.programs = progs.map(function (p) {
+        return {
+          id: p.id, name: clean(p.name), description: clean(p.description),
+          priceRf: p.price_mvr == null ? 0 : p.price_mvr,
+          billingPeriod: ['month', 'term', 'year'].indexOf(p.billing_period) > -1 ? p.billing_period : 'month',
+          classIds: (p.class_ids || []).filter(function (id) { return classOk[id]; }),
+          active: p.active !== false, showOnWebsite: p.show_on_website !== false
+        };
+      });
+      out.programSlots = R.program_slots.filter(function (s) {
+        return okId(s) && progOk[s.program_id] && classOk[s.class_id] && DAYS_ALL.indexOf(s.day) > -1 &&
+          /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(s.time || '');
+      }).map(function (s) {
+        var m = {
+          id: s.id, programId: s.program_id, classId: s.class_id, day: s.day, time: s.time,
+          instructorId: s.instructor_id || '', assistingInstructorId: s.assisting_instructor_id || undefined,
+          active: s.active !== false, full: s.is_full === true
+        };
+        if (s.day_option_group) m.trackLabel = clean(s.day_option_group);
+        return m;
+      });
+    }
+    return out;
   }
 
   function applyMemory(m) {
@@ -141,6 +174,11 @@
     replaceAll(d.instructors, m.instructors);
     replaceAll(d.classes, m.classes);
     replaceAll(d.classSlots, m.classSlots);
+    if (m.programs && m.programSlots) {
+      replaceAll(d.programs, m.programs);
+      replaceAll(d.programSlots, m.programSlots);
+      S.progLive = true;
+    }
   }
 
   // Current in-memory arrays as database rows, plus any problems found.
@@ -170,7 +208,7 @@
       });
     }
 
-    var rows = { rooms: [], tracks: [], instructors: [], instructor_private: [], classes: [], class_slots: [] };
+    var rows = { rooms: [], tracks: [], instructors: [], instructor_private: [], classes: [], class_slots: [], programs: [], program_slots: [] };
 
     d.rooms.forEach(function (r) {
       checkId('Room', r.id);
@@ -185,14 +223,14 @@
     d.instructors.forEach(function (i) {
       checkId('Instructor', i.id);
       checkText('Instructor', i.name, [['the name', i.name], ['the nickname', i.nickname], ['the bio', i.bio], ['the phone', i.phone],
-        ['the date of birth', i.dob], ['the national ID', i.nationalId], ['the qualifications', i.qualifications], ['the experience', i.experience]]);
+        ['the date of birth', i.dob], ['the qualifications', i.qualifications], ['the experience', i.experience]]);
       rows.instructors.push({
         id: i.id, name: String(i.name || '').trim(), nickname: String(i.nickname || i.name || '').trim(),
         bio: String(i.bio || ''), status: i.status || 'active'
       });
       rows.instructor_private.push({
         instructor_id: i.id, phone: String(i.phone || ''), dob: String(i.dob || ''),
-        national_id: String(i.nationalId || ''), qualifications: String(i.qualifications || ''),
+        qualifications: String(i.qualifications || ''),
         experience: String(i.experience || '')
       });
     });
@@ -218,6 +256,32 @@
         day_option_group: s.dayOptionGroup || null, active: s.active !== false, is_full: s.full === true
       });
     });
+    if (S.progLive) {
+      var progIds = {};
+      d.programs.forEach(function (p) {
+        progIds[p.id] = true;
+        checkId('Program', p.id);
+        checkText('Program', p.name, [['the name', p.name], ['the description', p.description]]);
+        rows.programs.push({
+          id: p.id, name: String(p.name || '').trim(), description: String(p.description || ''),
+          price_mvr: Math.max(0, toInt(p.priceRf, 0)),
+          billing_period: ['month', 'term', 'year'].indexOf(p.billingPeriod) > -1 ? p.billingPeriod : 'month',
+          class_ids: (p.classIds || []).filter(function (id) { return classIds[id]; }),
+          active: p.active !== false, show_on_website: p.showOnWebsite !== false
+        });
+      });
+      d.programSlots.forEach(function (s) {
+        if (!progIds[s.programId] || !classIds[s.classId]) return;   // its program or class was removed
+        checkId('Program session', s.id);
+        checkText('Program session', s.id, [['the track', s.trackLabel]]);
+        rows.program_slots.push({
+          id: s.id, program_id: s.programId, class_id: s.classId, day: s.day, time: s.time,
+          instructor_id: s.instructorId && instrIds[s.instructorId] ? s.instructorId : null,
+          assisting_instructor_id: s.assistingInstructorId && instrIds[s.assistingInstructorId] ? s.assistingInstructorId : null,
+          day_option_group: s.trackLabel || s.dayOptionGroup || null, active: s.active !== false, is_full: s.full === true
+        });
+      });
+    }
     return { rows: rows, problems: problems };
   }
 
@@ -227,9 +291,12 @@
     tracks: 'id,name,label,days',
     instructors: 'id,name,nickname,bio,status',
     classes: 'id,name,audience,type,color_key,fixed,duration_min,max_size,price_mvr,room_id,active,show_on_website',
-    class_slots: 'id,class_id,day,time,instructor_id,assisting_instructor_id,day_option_group,active,is_full'
+    class_slots: 'id,class_id,day,time,instructor_id,assisting_instructor_id,day_option_group,active,is_full',
+    programs: 'id,name,description,price_mvr,billing_period,class_ids,active,show_on_website',
+    program_slots: 'id,program_id,class_id,day,time,instructor_id,assisting_instructor_id,day_option_group,active,is_full'
   };
   var ORDER = ['rooms', 'tracks', 'instructors', 'classes', 'class_slots'];
+  var PROG_ORDER = ['programs', 'program_slots'];
 
   function friendlyError(err) {
     var code = err && (err.code || '');
@@ -246,12 +313,29 @@
     });
     if (withPrivate) {
       calls.push(FLO.sb.from('instructor_private')
-        .select('instructor_id,phone,dob,national_id,qualifications,experience').limit(2000));
+        .select('instructor_id,phone,dob,qualifications,experience').limit(2000));
     }
+    // Programs are fetched on their own: if their tables do not exist yet
+    // (stage 3 not run) the rest still loads and programs keep the sample data.
+    var progCalls = PROG_ORDER.map(function (t) {
+      return FLO.sb.from(t).select(COLS[t]).order('seq', { ascending: true }).limit(2000);
+    });
     var res = await Promise.all(calls);
+    var pres = await Promise.all(progCalls);
     for (var i = 0; i < res.length; i++) if (res[i].error) throw res[i].error;
     var R = {};
     ORDER.forEach(function (t, i) { R[t] = res[i].data || []; });
+    var progErr = pres[0].error || pres[1].error;
+    if (progErr) {
+      var pm = String(progErr.message || '');
+      var missing = progErr.code === 'PGRST205' || progErr.code === '42P01' || /does not exist|schema cache/i.test(pm);
+      if (!missing) throw progErr;
+      S.programsMissing = true;
+    } else {
+      R.programs = pres[0].data || [];
+      R.program_slots = pres[1].data || [];
+      S.programsMissing = false;
+    }
     return { R: R, priv: withPrivate ? (res[ORDER.length].data || []) : [] };
   }
 
@@ -268,9 +352,10 @@
     // Public columns only. Private instructor details are never cached.
     var safe = {
       rooms: m.rooms, tracks: m.tracks, classes: m.classes, classSlots: m.classSlots,
+      programs: m.programs, programSlots: m.programSlots,
       instructors: m.instructors.map(function (i) {
         return { id: i.id, name: i.name, nickname: i.nickname, bio: i.bio, status: i.status,
-                 phone: '', dob: '', nationalId: '', qualifications: '', experience: '' };
+                 phone: '', dob: '', qualifications: '', experience: '' };
       })
     };
     try { window.localStorage.setItem(CACHE_KEY, JSON.stringify(safe)); } catch (e) { /* ignore */ }
@@ -315,6 +400,9 @@
       S.canWrite = true;
       adminBusy = false;
       setSync('idle', '');
+      if (S.programsMissing) {
+        setSync('err', 'Programs are not stored yet. Run flo_stage3_programs.sql in Supabase; until then changes to programs will not be saved.');
+      }
       emit();
       return { ok: true };
     } catch (err) {
@@ -326,7 +414,7 @@
   };
 
   /* ── Saving (administrator only) ────────────────────── */
-  var TABLES = ['rooms', 'tracks', 'instructors', 'instructor_private', 'classes', 'class_slots'];
+  var TABLES = ['rooms', 'tracks', 'instructors', 'instructor_private', 'classes', 'class_slots', 'programs', 'program_slots'];
   var KEY = { instructor_private: 'instructor_id' };
   function keyOf(t) { return KEY[t] || 'id'; }
   var snapshot = {};
@@ -397,7 +485,7 @@
   function fail(table, error) {
     var msg = String((error && error.message) || error);
     var what = { rooms: 'a room', tracks: 'a track', instructors: 'an instructor', instructor_private: 'instructor details',
-                 classes: 'a class', class_slots: 'a class time' }[table] || table;
+                 classes: 'a class', class_slots: 'a class time', programs: 'a program', program_slots: 'a program session' }[table] || table;
     if (/duplicate key|unique/i.test(msg)) msg = 'Two entries share a name or time that must be unique.';
     else if (/violates check/i.test(msg)) msg = 'A value is outside the allowed range.';
     else if (/row-level security|permission denied/i.test(msg)) msg = 'This account is not allowed to change studio data. Sign in again as the administrator.';
@@ -583,7 +671,196 @@
     var out = {};
     Object.keys(w).forEach(function (k) { out[k] = w[k]; });
     out.classes = cl;
+    if (S.progLive && w.kids && w.kids.cards) out.kids = resolveKids(w);
     return out;
+  };
+
+  /* ── Programs (FLO Kids) ────────────────────────────── */
+  // Facts that live on the program row are never typed twice: name, price,
+  // the styles of its classes, and its weekly sessions.
+  var LEGACY_PROGRAM = { 'kids-fly': 'kids-aerial-only', 'kids-fusion': 'kids-fusion' };
+  var PERIOD = { month: 'month', term: 'term', year: 'year' };
+
+  // The program a FLO Kids card is tied to, or null for a card written by hand.
+  // 'gone' means the card names a program that no longer exists.
+  S.programLinkFor = function (card) {
+    if (!S.progLive) return null;
+    var list = D().programs;
+    if (card.programId) return byId(list, card.programId) || 'gone';
+    var hit = LEGACY_PROGRAM[card.id] ? byId(list, LEGACY_PROGRAM[card.id]) : null;
+    if (hit) return hit;
+    var nm = String(card.name || '').trim().toLowerCase();
+    if (!nm) return null;
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].name).trim().toLowerCase() === nm) return list[i];
+    }
+    return null;
+  };
+
+  function programOffered(p) { return p.active !== false && p.showOnWebsite !== false; }
+
+  S.programPriceText = function (p) {
+    var n = Number(p.priceRf);
+    return !n ? '' : 'MVR ' + n.toLocaleString('en-US') + ' / ' + (PERIOD[p.billingPeriod] || 'month');
+  };
+
+  S.programClasses = function (p) {
+    var d = D();
+    return (p.classIds || []).map(function (id) { return byId(d.classes, id); }).filter(Boolean);
+  };
+
+  // "Ballet & Aerial": the styles of the classes in the program.
+  S.programType = function (p) {
+    var seen = [];
+    S.programClasses(p).forEach(function (c) {
+      var t = c.type || c.name;
+      if (t && seen.indexOf(t) < 0) seen.push(t);
+    });
+    return seen.join(' & ');
+  };
+
+  S.programSlotsOf = function (p) {
+    var order = (p.classIds || []);
+    var list = D().programSlots.filter(function (s) { return s.programId === p.id && s.active !== false; });
+    list.sort(function (a, b) {
+      return WEEK_WEB.indexOf(a.day) - WEEK_WEB.indexOf(b.day) || a.time.localeCompare(b.time) ||
+        order.indexOf(a.classId) - order.indexOf(b.classId);
+    });
+    return list;
+  };
+
+  S.deriveProgramSlots = function (p) {
+    var multi = S.programClasses(p).length > 1;
+    var d = D();
+    var slots = S.programSlotsOf(p).map(function (s) {
+      var c = byId(d.classes, s.classId);
+      return { text: (multi && c ? c.name + ' · ' : '') + s.day + ' · ' + fmt12(s.time), status: s.full ? 'full' : 'available' };
+    });
+    var open = slots.filter(function (x) { return x.status !== 'full'; }).length;
+    var label = !slots.length ? 'Schedule coming soon' : (open ? 'Available slots' : 'No slots available');
+    return { slots: slots.slice(0, 12), label: label, allFull: slots.length > 0 && open === 0 };
+  };
+
+  function mergeKidsCard(card, p) {
+    var d = S.deriveProgramSlots(p);
+    var m = {};
+    Object.keys(card).forEach(function (k) { m[k] = card[k]; });
+    m.programId = p.id;
+    m.name = p.name;
+    m.type = S.programType(p);
+    m.price = S.programPriceText(p);
+    m.slots = d.slots;
+    m.slotsLabel = d.label;
+    m.waitlist = card.waitlist === true || d.allFull;
+    if (d.allFull && card.buttonLabel === 'Join Class') m.buttonLabel = 'Join Waitlist';
+    return m;
+  }
+
+  S.resolveKidsCard = function (card) {
+    var l = S.programLinkFor(card);
+    return l && l !== 'gone' ? mergeKidsCard(card, l) : card;
+  };
+
+  function autoKidsCard(p) {
+    var d = S.deriveProgramSlots(p);
+    return {
+      id: 'auto-' + p.id, programId: p.id, icon: '', name: p.name, type: S.programType(p), desc: p.description || '',
+      price: S.programPriceText(p), meta: [], slotsLabel: d.label, slots: d.slots,
+      buttonLabel: d.allFull ? 'Join Waitlist' : 'Join Class', buttonLink: '#', waitlist: d.allFull,
+      highlight: false, hidden: false, auto: true
+    };
+  }
+
+  S.programs = function () { return S.progLive ? D().programs : []; };
+
+  // Programs that are live but have no FLO Kids card of their own.
+  S.unlistedPrograms = function (cards) {
+    if (!S.progLive) return [];
+    var claimed = {};
+    cards.forEach(function (c) {
+      var l = S.programLinkFor(c);
+      if (l && l !== 'gone') claimed[l.id] = true;
+    });
+    return D().programs.filter(function (p) { return programOffered(p) && !claimed[p.id]; });
+  };
+
+  function resolveKids(w) {
+    var cards = [], claimed = {};
+    w.kids.cards.forEach(function (card) {
+      var l = S.programLinkFor(card);
+      if (!l) { cards.push(card); return; }
+      if (l === 'gone') return;
+      claimed[l.id] = true;
+      if (!programOffered(l)) return;
+      cards.push(mergeKidsCard(card, l));
+    });
+    D().programs.forEach(function (p) {
+      if (programOffered(p) && !claimed[p.id]) cards.push(autoKidsCard(p));
+    });
+    var k = {};
+    Object.keys(w.kids).forEach(function (key) { k[key] = w.kids[key]; });
+    k.cards = cards;
+    return k;
+  }
+
+  /* ── Client program picker ─────────────────────────── */
+  // Programs the client portal offers: live programs that have a class.
+  S.pickerPrograms = function () {
+    return D().programs.filter(function (p) { return p.active !== false && S.programClasses(p).length; });
+  };
+
+  // How many sessions of each class a child attends in a week, worked out
+  // from the program's tracks: sessions of the class divided by the number
+  // of tracks (a session with no track counts as its own track).
+  function trackKey(s) { return s.trackLabel || s.dayOptionGroup || s.id; }
+
+  S.programIncludes = function (p) {
+    var slots = S.programSlotsOf(p);
+    var keys = {};
+    slots.forEach(function (s) { keys[trackKey(s)] = true; });
+    var nKeys = Math.max(1, Object.keys(keys).length);
+    return S.programClasses(p).map(function (c) {
+      var n = slots.filter(function (s) { return s.classId === c.id; }).length;
+      var per = Math.max(1, Math.round(n / nKeys));
+      return per + ' ' + c.name + ' session' + (per > 1 ? 's' : '') + ' / week';
+    });
+  };
+
+  // The choices a client has when joining a program: one per track.
+  S.programOptions = function (p) {
+    var d = D();
+    var groups = [], by = {};
+    S.programSlotsOf(p).slice().sort(function (a, b) {
+      return D().programSlots.indexOf(a) - D().programSlots.indexOf(b);
+    }).forEach(function (s) {
+      var k = trackKey(s);
+      if (!by[k]) { by[k] = { key: k, slots: [] }; groups.push(by[k]); }
+      by[k].slots.push(s);
+    });
+    var classes = S.programClasses(p);
+    var multi = classes.length > 1;
+    return groups.map(function (g) {
+      var title = [], meta = [];
+      classes.forEach(function (c) {
+        var mine = g.slots.filter(function (s) { return s.classId === c.id; });
+        if (!mine.length) return;
+        var days = mine.map(function (s) { return s.day; }).join(' + ');
+        var times = [];
+        mine.forEach(function (s) { var t = fmt12(s.time); if (times.indexOf(t) < 0) times.push(t); });
+        var who = [];
+        mine.forEach(function (s) {
+          var i = byId(d.instructors, s.instructorId);
+          if (i && who.indexOf(i.name) < 0) who.push(i.name);
+        });
+        title.push(multi ? days + ' ' + (c.type || c.name) : days + ' · ' + times.join(', '));
+        meta.push((multi ? (c.type || c.name) + ' ' : (c.type || c.name) + ' · ') + (multi ? times.join(', ') : '') +
+          (who.length ? (multi ? ' ' : '') + 'with ' + who.join(', ') : ''));
+      });
+      return {
+        key: g.key, title: title.join(' · '), meta: meta.join(' · '),
+        full: g.slots.some(function (s) { return s.full === true; })
+      };
+    });
   };
 
   /* ── Client enrolment timetable ─────────────────────── */
