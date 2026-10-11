@@ -3,7 +3,7 @@
    The "Website" area of the admin portal. Lets the signed-in
    administrator edit what visitors see on the public site.
 
-   Built so far: Hero, Classes, FLO Kids, Our Story, The Team, Page Order.
+   Built so far: Hero, Classes, FLO Kids, Our Story, The Team, Workshops & Events, Page Order.
    The other tabs are listed so the final structure is visible;
    each is switched on in a later stage.
 
@@ -23,7 +23,7 @@
     { key: 'kids',   label: 'FLO Kids',            built: true },
     { key: 'story',  label: 'Our Story',           built: true },
     { key: 'team',   label: 'The Team',            built: true },
-    { key: 'events', label: 'Workshops & Events' },
+    { key: 'events', label: 'Workshops & Events',  built: true },
     { key: 'footer', label: 'Footer' },
     { key: 'order',  label: 'Page Order',          built: true }
   ];
@@ -90,6 +90,7 @@
     if (key === 'classes' || key === 'kids') return renderClasses();
     if (key === 'story') return renderStory();
     if (key === 'team') return renderTeam();
+    if (key === 'events') return renderEvents();
     if (key === 'order') return renderOrder();
     renderPending(key);
   }
@@ -1209,6 +1210,525 @@
     draft.editId = editId;
     renderTeam();
     setStatus(panel.querySelector('#wc-status') || panel.querySelector('#wce-status'), 'Saved. The public page is updated.', 'ok');
+  }
+
+  /* ── Workshops & Events editor ──────────────────────── */
+  function ensureEventsDraft() {
+    if (!draft || draft.__tab !== 'events') {
+      draft = { __tab: 'events', sub: 'upcoming', view: 'list', editId: null, d: FLO.clone(FLO.website.events) };
+    }
+    return draft.d;
+  }
+  function evW() { return { events: draft.d }; }            // lets the shared renderers use draft types
+  function evFind(list, id) { return list.filter(function (x) { return x.id === id; })[0]; }
+  function typeUse(id) {
+    var d = draft.d;
+    return d.upcoming.filter(function (e) { return e.typeId === id; }).length +
+           d.past.filter(function (e) { return e.typeId === id; }).length;
+  }
+  function typeOptions(selected, allowNone) {
+    return (allowNone ? '<option value=""' + (!selected ? ' selected' : '') + '>No type</option>' : '') +
+      draft.d.types.map(function (t) {
+        return '<option value="' + esc(t.id) + '"' + (t.id === selected ? ' selected' : '') + '>' + esc(t.label) + '</option>';
+      }).join('');
+  }
+  function sortUp(list) {
+    return list.slice().sort(function (a, b) { return (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')); });
+  }
+  function sortPast(list) { return list.slice().sort(function (a, b) { return b.date.localeCompare(a.date); }); }
+  function dateLabel(iso) {
+    if (!FLO.validDate(iso)) return 'No date';
+    var p = FLO.dateParts(iso);
+    return p.weekday.slice(0, 3) + ' ' + p.day + ' ' + p.mon + ' ' + p.year;
+  }
+  function evTypeBadge(id) {
+    var t = evFind(draft.d.types, id);
+    return t ? '<span class="workshop-badge badge-c-' + esc(t.color) + '">' + esc(t.label) + '</span>' : '';
+  }
+
+  function renderEvents() {
+    ensureEventsDraft();
+    var sub = draft.sub, edit = draft.view === 'edit';
+    if (sub === 'settings') return renderEventSettings();
+    if (sub === 'past') {
+      if (edit && evFind(draft.d.past, draft.editId)) return renderPastEditor();
+      draft.view = 'list'; draft.editId = null;
+      return renderPastList();
+    }
+    if (edit && evFind(draft.d.upcoming, draft.editId)) return renderUpcomingEditor();
+    draft.sub = 'upcoming'; draft.view = 'list'; draft.editId = null;
+    renderUpcomingList();
+  }
+
+  function evSubTabs() {
+    var d = draft.d;
+    var items = [['upcoming', 'Upcoming (' + d.upcoming.length + ')'], ['past', 'Past events (' + d.past.length + ')'], ['settings', 'Settings']];
+    return '<div class="admin-audience-tabs wsite-subtabs">' + items.map(function (it) {
+      return '<button type="button" class="admin-audience-tab' + (draft.sub === it[0] ? ' active' : '') + '" data-esub="' + it[0] + '">' + esc(it[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  function wireSubTabs() {
+    panel.querySelectorAll('[data-esub]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        draft.sub = b.getAttribute('data-esub'); draft.view = 'list'; draft.editId = null;
+        renderEvents();
+      });
+    });
+  }
+  function cardOpen(title, desc) {
+    return '<div class="portal-section wsite-card"><h3 class="portal-section-title">' + esc(title) + '</h3>' +
+      '<p class="portal-section-desc">' + esc(desc) + '</p>' + evSubTabs();
+  }
+
+  /* — Upcoming: list — */
+  function renderUpcomingList() {
+    var d = draft.d, today = FLO.today();
+    var rows = sortUp(d.upcoming).map(function (e) {
+      var passed = e.date < today;
+      var p = FLO.dateParts(e.date);
+      var badges = evTypeBadge(e.typeId) +
+        (passed ? '<span class="wsite-badge wsite-badge--accent">Date passed \u2013 not shown</span>' : '') +
+        (e.hidden ? '<span class="wsite-badge">Hidden</span>' : '');
+      return '<li class="wsite-crow' + (e.hidden || passed ? ' is-hidden' : '') + '" data-id="' + esc(e.id) + '">' +
+        '<span class="wsite-datebox"><b>' + p.day + '</b><i>' + p.mon + '</i></span>' +
+        '<span class="wsite-crow-main"><span class="wsite-crow-name">' + esc(e.title) + '</span>' +
+          '<span class="wsite-crow-type">' + esc(dateLabel(e.date) + (e.time ? ' \u00B7 ' + FLO.fmtTime(e.time) : '') + (e.price ? ' \u00B7 ' + e.price : '')) + '</span>' +
+          '<span class="wsite-badges">' + badges + '</span></span>' +
+        '<span class="wsite-crow-btns">' +
+          '<button type="button" class="wsite-small" data-act="edit">Edit</button>' +
+          '<button type="button" class="wsite-small" data-act="dup">Duplicate</button>' +
+          '<button type="button" class="wsite-small" data-act="past">Move to past</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-act="del">Delete</button>' +
+        '</span></li>';
+    }).join('');
+    panel.innerHTML = cardOpen('Workshops & Events',
+        'Events are listed on the public page soonest first. An event disappears from \u201CComing Up\u201D by itself once its date has passed (Maldives time).') +
+      '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Upcoming events</h4>' +
+        '<button type="button" class="btn-admin-add" id="we-add"' + (d.upcoming.length >= 60 ? ' disabled' : '') + '>+ Add event</button></div>' +
+      (rows ? '<ul class="wsite-clist">' + rows + '</ul>'
+            : '<p class="admin-empty-note">No upcoming events. The public page will say \u201C' + esc(d.emptyText) + '\u201D.</p>') +
+      actions('we') + '</div>';
+    wireSubTabs();
+    wireEventsCommon();
+    panel.querySelector('#we-add').addEventListener('click', function () {
+      var e = { id: FLO.newId('e'), typeId: d.types[0].id, date: FLO.today(), time: '', title: 'New event', desc: '',
+                duration: '', location: '', spots: '', price: '', buttonLabel: 'Register', buttonLink: '#', hidden: false };
+      d.upcoming.push(e); draft.view = 'edit'; draft.editId = e.id; dirty = true;
+      renderUpcomingEditor();
+    });
+    var listEl = panel.querySelector('.wsite-clist');
+    if (listEl) listEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      var id = btn.closest('[data-id]').getAttribute('data-id');
+      var ev = evFind(d.upcoming, id);
+      if (!ev) return;
+      var act = btn.getAttribute('data-act');
+      if (act === 'edit') { draft.view = 'edit'; draft.editId = id; renderUpcomingEditor(); }
+      else if (act === 'dup') {
+        var copy = FLO.clone(ev); copy.id = FLO.newId('e'); copy.title = (copy.title + ' (copy)').slice(0, 120);
+        d.upcoming.push(copy); dirty = true; renderUpcomingList();
+      } else if (act === 'past') {
+        var post = { id: FLO.newId('p'), typeId: ev.typeId, date: ev.date, title: ev.title, text: ev.desc, images: [], hidden: false };
+        d.upcoming = d.upcoming.filter(function (x) { return x.id !== id; });
+        d.past.push(post);
+        draft.sub = 'past'; draft.view = 'edit'; draft.editId = post.id; dirty = true;
+        renderPastEditor();
+        setStatus(panel.querySelector('#wp-status'), 'Moved to Past events. Add photos and press Save changes.', 'ok');
+      } else if (act === 'del') {
+        if (!window.confirm('Delete \u201C' + ev.title + '\u201D? It is removed when you press Save changes.')) return;
+        d.upcoming = d.upcoming.filter(function (x) { return x.id !== id; }); dirty = true; renderUpcomingList();
+      }
+    });
+  }
+
+  function wireEventsCommon() {
+    var statusEl = panel.querySelector('#we-status');
+    var disc = panel.querySelector('#we-discard');
+    if (disc) disc.addEventListener('click', function () {
+      if (dirty && !window.confirm('Discard your unsaved changes?')) return;
+      draft = null; dirty = false; renderEvents();
+    });
+    var save = panel.querySelector('#we-save');
+    if (save) save.addEventListener('click', function (e) { saveEvents(e.currentTarget, statusEl); });
+  }
+
+  /* — Upcoming: editor — */
+  function renderUpcomingEditor() {
+    var d = draft.d, e = evFind(d.upcoming, draft.editId);
+    if (!e) { draft.view = 'list'; return renderUpcomingList(); }
+    panel.innerHTML =
+      '<div class="portal-section wsite-card">' +
+        '<p class="wsite-back"><button type="button" class="wsite-link-btn" id="wu-back">\u2190 Back to upcoming events</button></p>' +
+        '<h3 class="portal-section-title">Edit event</h3>' +
+        '<div class="wsite-grid"><div class="wsite-form">' +
+          '<div class="wsite-two">' +
+            field('Title', 'As shown on the page.', '<input type="text" class="admin-panel-input" id="wu-title" maxlength="120" value="' + esc(e.title) + '">') +
+            field('Type', 'Manage types under Settings.', '<select class="admin-panel-select" id="wu-type">' + typeOptions(e.typeId, false) + '</select>') +
+          '</div>' +
+          '<div class="wsite-two">' +
+            field('Date', 'The weekday is worked out automatically.', '<input type="date" class="admin-panel-input" id="wu-date" value="' + esc(e.date) + '">') +
+            field('Start time', 'Optional.', '<input type="time" class="admin-panel-input" id="wu-time" value="' + esc(e.time) + '">') +
+          '</div>' +
+          field('Description', '', '<textarea class="admin-panel-input" id="wu-desc" rows="4" maxlength="600">' + esc(e.desc) + '</textarea>') +
+          '<div class="wsite-two">' +
+            field('Duration', 'e.g. 2 hrs, Full day.', '<input type="text" class="admin-panel-input" id="wu-dur" maxlength="40" value="' + esc(e.duration) + '">') +
+            field('Location', 'e.g. Studio \u00B7 Mat room.', '<input type="text" class="admin-panel-input" id="wu-loc" maxlength="80" value="' + esc(e.location) + '">') +
+          '</div>' +
+          '<div class="wsite-two">' +
+            field('Availability', 'e.g. 8 spots left, Open. Shown in tangerine.', '<input type="text" class="admin-panel-input" id="wu-spots" maxlength="40" value="' + esc(e.spots) + '">') +
+            field('Price', 'e.g. MVR 500, Free.', '<input type="text" class="admin-panel-input" id="wu-price" maxlength="40" value="' + esc(e.price) + '">') +
+          '</div>' +
+          '<div class="wsite-two">' +
+            field('Button text', 'Leave empty to hide the button.', '<input type="text" class="admin-panel-input" id="wu-btn" maxlength="40" value="' + esc(e.buttonLabel) + '">') +
+            field('Button link', 'e.g. # or https://\u2026', '<input type="text" class="admin-panel-input" id="wu-link" maxlength="300" value="' + esc(e.buttonLink) + '">') +
+          '</div>' +
+          '<div class="wsite-checks"><label><input type="checkbox" id="wu-hidden"' + (e.hidden ? ' checked' : '') + '> Hide this event from the public page</label></div>' +
+        '</div>' +
+        '<div class="wsite-preview-wrap"><p class="wsite-label">Preview</p><div class="wsite-event-preview" id="wu-preview"></div></div></div>' +
+        '<div class="wsite-actions">' +
+          '<button type="button" class="btn-admin-primary" id="wu-save">Save changes</button>' +
+          '<button type="button" class="wsite-link-btn" id="wu-done">Back to upcoming events</button>' +
+          '<button type="button" class="wsite-link-btn wsite-link-btn--danger" id="wu-delete">Delete this event</button>' +
+          '<span class="wsite-status" id="wu-status" role="status"></span>' +
+        '</div></div>';
+
+    var statusEl = panel.querySelector('#wu-status');
+    function preview() {
+      var box = panel.querySelector('#wu-preview');
+      if (!FLO.validDate(e.date)) { box.innerHTML = '<p class="wsite-hint">Choose a date to see the preview.</p>'; return; }
+      var pe = FLO.clone(e); pe.buttonLink = '#';
+      box.innerHTML = FLO.upcomingItemHTML(pe, evW());
+    }
+    function touch() { dirty = true; setStatus(statusEl, ''); preview(); }
+    function bind(id, key) { panel.querySelector(id).addEventListener('input', function (ev) { e[key] = ev.target.value; touch(); }); }
+    bind('#wu-title', 'title'); bind('#wu-date', 'date'); bind('#wu-time', 'time'); bind('#wu-desc', 'desc');
+    bind('#wu-dur', 'duration'); bind('#wu-loc', 'location'); bind('#wu-spots', 'spots'); bind('#wu-price', 'price');
+    bind('#wu-btn', 'buttonLabel'); bind('#wu-link', 'buttonLink');
+    panel.querySelector('#wu-type').addEventListener('change', function (ev) { e.typeId = ev.target.value; touch(); });
+    panel.querySelector('#wu-hidden').addEventListener('change', function (ev) { e.hidden = ev.target.checked; touch(); });
+    preview();
+
+    function back() { draft.view = 'list'; draft.editId = null; renderUpcomingList(); }
+    panel.querySelector('#wu-back').addEventListener('click', back);
+    panel.querySelector('#wu-done').addEventListener('click', back);
+    panel.querySelector('#wu-delete').addEventListener('click', function () {
+      if (!window.confirm('Delete \u201C' + e.title + '\u201D? It is removed when you press Save changes.')) return;
+      d.upcoming = d.upcoming.filter(function (x) { return x.id !== e.id; }); dirty = true; back();
+    });
+    panel.querySelector('#wu-save').addEventListener('click', function (ev) { saveEvents(ev.currentTarget, statusEl); });
+  }
+
+  /* — Past events: list — */
+  function renderPastList() {
+    var d = draft.d;
+    var rows = sortPast(d.past).map(function (e) {
+      var thumb = e.images.length
+        ? '<img class="wsite-crow-thumb wsite-crow-thumb--photo" src="' + esc(FLO.storageUrl(FLO.thumbPath(e.images[0]))) + '" alt="">'
+        : '<span class="wsite-crow-thumb wsite-crow-thumb--ph">' + esc((e.title || '?').charAt(0).toUpperCase()) + '</span>';
+      return '<li class="wsite-crow' + (e.hidden ? ' is-hidden' : '') + '" data-id="' + esc(e.id) + '">' + thumb +
+        '<span class="wsite-crow-main"><span class="wsite-crow-name">' + esc(e.title) + '</span>' +
+          '<span class="wsite-crow-type">' + esc(dateLabel(e.date) + ' \u00B7 ' + e.images.length + (e.images.length === 1 ? ' photo' : ' photos')) + '</span>' +
+          '<span class="wsite-badges">' + evTypeBadge(e.typeId) + (e.hidden ? '<span class="wsite-badge">Hidden</span>' : '') + '</span></span>' +
+        '<span class="wsite-crow-btns">' +
+          '<button type="button" class="wsite-small" data-act="edit">Edit</button>' +
+          '<button type="button" class="wsite-small" data-act="dup">Duplicate</button>' +
+          '<button type="button" class="wsite-small wsite-small--danger" data-act="del">Delete</button>' +
+        '</span></li>';
+    }).join('');
+    panel.innerHTML = cardOpen('Workshops & Events',
+        'Past events are shown as posts, most recent first, with their text and photo gallery. Visitors see a \u201CPast Events\u201D tab once at least one is visible.') +
+      '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Past events</h4>' +
+        '<button type="button" class="btn-admin-add" id="we-addpast"' + (d.past.length >= 60 ? ' disabled' : '') + '>+ Add past event</button></div>' +
+      (rows ? '<ul class="wsite-clist">' + rows + '</ul>' : '<p class="admin-empty-note">No past events yet.</p>') +
+      actions('we') + '</div>';
+    wireSubTabs();
+    wireEventsCommon();
+    panel.querySelector('#we-addpast').addEventListener('click', function () {
+      var p = { id: FLO.newId('p'), typeId: '', date: FLO.today(), title: 'New past event', text: '', images: [], hidden: false };
+      d.past.push(p); draft.view = 'edit'; draft.editId = p.id; dirty = true; renderPastEditor();
+    });
+    var listEl = panel.querySelector('.wsite-clist');
+    if (listEl) listEl.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-act]');
+      if (!btn) return;
+      var id = btn.closest('[data-id]').getAttribute('data-id');
+      var ev = evFind(d.past, id);
+      if (!ev) return;
+      var act = btn.getAttribute('data-act');
+      if (act === 'edit') { draft.view = 'edit'; draft.editId = id; renderPastEditor(); }
+      else if (act === 'dup') {
+        var copy = FLO.clone(ev); copy.id = FLO.newId('p'); copy.title = (copy.title + ' (copy)').slice(0, 120);
+        d.past.push(copy); dirty = true; renderPastList();
+      } else if (act === 'del') {
+        if (!window.confirm('Delete \u201C' + ev.title + '\u201D and its photo list? It is removed when you press Save changes.')) return;
+        d.past = d.past.filter(function (x) { return x.id !== id; }); dirty = true; renderPastList();
+      }
+    });
+  }
+
+  /* — Past events: editor — */
+  function renderPastEditor() {
+    var d = draft.d, e = evFind(d.past, draft.editId);
+    if (!e) { draft.view = 'list'; return renderPastList(); }
+    var gallery = e.images.map(function (path, i) {
+      return '<div class="wsite-gitem" data-gi="' + i + '">' +
+        '<img src="' + esc(FLO.storageUrl(FLO.thumbPath(path))) + '" alt="Photo ' + (i + 1) + '">' +
+        '<span class="wsite-gbtns">' +
+          '<button type="button" class="wsite-gbtn" data-g="left" aria-label="Move photo ' + (i + 1) + ' earlier"' + (i === 0 ? ' disabled' : '') + '>\u25C0</button>' +
+          '<button type="button" class="wsite-gbtn" data-g="right" aria-label="Move photo ' + (i + 1) + ' later"' + (i === e.images.length - 1 ? ' disabled' : '') + '>\u25B6</button>' +
+          '<button type="button" class="wsite-gbtn wsite-gbtn--del" data-g="del" aria-label="Remove photo ' + (i + 1) + '">\u2715</button>' +
+        '</span></div>';
+    }).join('');
+
+    panel.innerHTML =
+      '<div class="portal-section wsite-card">' +
+        '<p class="wsite-back"><button type="button" class="wsite-link-btn" id="wp-back">\u2190 Back to past events</button></p>' +
+        '<h3 class="portal-section-title">Edit past event</h3>' +
+        '<div class="wsite-grid"><div class="wsite-form">' +
+          '<div class="wsite-two">' +
+            field('Title', 'As shown on the page.', '<input type="text" class="admin-panel-input" id="wp-title" maxlength="120" value="' + esc(e.title) + '">') +
+            field('Type', 'Optional.', '<select class="admin-panel-select" id="wp-type">' + typeOptions(e.typeId, true) + '</select>') +
+          '</div>' +
+          field('Date', '', '<input type="date" class="admin-panel-input" id="wp-date" value="' + esc(e.date) + '">') +
+          field('Text', 'Leave a blank line between paragraphs.', '<textarea class="admin-panel-input" id="wp-text" rows="7" maxlength="4000">' + esc(e.text) + '</textarea>') +
+          '<div class="wsite-field"><label class="wsite-label">Photo gallery (' + e.images.length + '/24)</label>' +
+            '<p class="wsite-hint">Visitors can click a photo to view it larger. Photos are reduced automatically; you can choose several at once.</p>' +
+            (gallery ? '<div class="wsite-gallery" id="wp-gallery">' + gallery + '</div>' : '') +
+            '<div class="wsite-row"><label class="btn-admin-add wsite-upload">Add photos' +
+              '<input type="file" id="wp-files" accept="image/png,image/jpeg,image/webp" multiple hidden></label>' +
+              '<span class="wsite-hint" id="wp-gstatus"></span></div></div>' +
+          '<div class="wsite-checks"><label><input type="checkbox" id="wp-hidden"' + (e.hidden ? ' checked' : '') + '> Hide this event from the public page</label></div>' +
+        '</div>' +
+        '<div class="wsite-preview-wrap"><p class="wsite-label">Preview</p><div class="wsite-past-preview" id="wp-preview"></div></div></div>' +
+        '<div class="wsite-actions">' +
+          '<button type="button" class="btn-admin-primary" id="wp-save">Save changes</button>' +
+          '<button type="button" class="wsite-link-btn" id="wp-done">Back to past events</button>' +
+          '<button type="button" class="wsite-link-btn wsite-link-btn--danger" id="wp-delete">Delete this event</button>' +
+          '<span class="wsite-status" id="wp-status" role="status"></span>' +
+        '</div></div>';
+
+    var statusEl = panel.querySelector('#wp-status');
+    function preview() {
+      var box = panel.querySelector('#wp-preview');
+      if (!FLO.validDate(e.date)) { box.innerHTML = '<p class="wsite-hint">Choose a date to see the preview.</p>'; return; }
+      box.innerHTML = FLO.pastEventHTML(e, evW());
+    }
+    function touch() { dirty = true; setStatus(statusEl, ''); preview(); }
+    function bind(id, key) { panel.querySelector(id).addEventListener('input', function (ev) { e[key] = ev.target.value; touch(); }); }
+    bind('#wp-title', 'title'); bind('#wp-date', 'date'); bind('#wp-text', 'text');
+    panel.querySelector('#wp-type').addEventListener('change', function (ev) { e.typeId = ev.target.value; touch(); });
+    panel.querySelector('#wp-hidden').addEventListener('change', function (ev) { e.hidden = ev.target.checked; touch(); });
+    preview();
+
+    var gal = panel.querySelector('#wp-gallery');
+    if (gal) gal.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-g]');
+      if (!b || b.disabled) return;
+      var i = parseInt(b.closest('[data-gi]').getAttribute('data-gi'), 10);
+      var act = b.getAttribute('data-g');
+      if (act === 'del') e.images.splice(i, 1);
+      else {
+        var j = act === 'left' ? i - 1 : i + 1;
+        if (j < 0 || j >= e.images.length) return;
+        var t = e.images[i]; e.images[i] = e.images[j]; e.images[j] = t;
+      }
+      dirty = true; renderPastEditor();
+    });
+
+    panel.querySelector('#wp-files').addEventListener('change', async function (ev) {
+      var files = Array.prototype.slice.call(ev.target.files || []);
+      if (!files.length) return;
+      var room = 24 - e.images.length;
+      if (room <= 0) { setStatus(statusEl, 'This event already has 24 photos, the maximum.', 'err'); return; }
+      var gst = panel.querySelector('#wp-gstatus');
+      var added = 0, failed = [];
+      for (var k = 0; k < files.length && added < room; k++) {
+        gst.textContent = 'Uploading photo ' + (k + 1) + ' of ' + files.length + '\u2026';
+        var res = await FLO.uploadImageSet(files[k], 'events');
+        if (res.ok) { e.images.push(res.path); added++; } else failed.push(files[k].name + ': ' + res.error);
+      }
+      if (added) dirty = true;
+      var skipped = files.length - added - failed.length;
+      renderPastEditor();
+      var msg = added + (added === 1 ? ' photo' : ' photos') + ' added.' + (added ? ' Press Save changes to publish.' : '');
+      if (skipped > 0) msg += ' ' + skipped + ' skipped (24 photo limit).';
+      if (failed.length) msg += ' Failed: ' + failed.join('; ');
+      setStatus(panel.querySelector('#wp-status'), msg, failed.length ? 'err' : 'ok');
+    });
+
+    function back() { draft.view = 'list'; draft.editId = null; renderPastList(); }
+    panel.querySelector('#wp-back').addEventListener('click', back);
+    panel.querySelector('#wp-done').addEventListener('click', back);
+    panel.querySelector('#wp-delete').addEventListener('click', function () {
+      if (!window.confirm('Delete \u201C' + e.title + '\u201D? It is removed when you press Save changes.')) return;
+      d.past = d.past.filter(function (x) { return x.id !== e.id; }); dirty = true; back();
+    });
+    panel.querySelector('#wp-save').addEventListener('click', function (ev) { saveEvents(ev.currentTarget, statusEl); });
+  }
+
+  /* — Settings: heading, tabs, banner, event types — */
+  var COLOR_LABELS = { teal: 'Teal', purple: 'Purple', gold: 'Gold', tangerine: 'Tangerine', blue: 'Blue', rose: 'Rose', green: 'Green', grey: 'Grey' };
+
+  function renderEventSettings() {
+    var d = draft.d, b = d.banner, h = d.header;
+    var typeRows = d.types.map(function (t, i) {
+      var used = typeUse(t.id);
+      return '<div class="wsite-prow wsite-srow" data-ti="' + i + '">' +
+        '<input type="text" class="admin-panel-input" data-tf="label" maxlength="30" aria-label="Type ' + (i + 1) + ' name" value="' + esc(t.label) + '">' +
+        '<select class="admin-panel-select" data-tf="color" aria-label="Type ' + (i + 1) + ' colour">' +
+          FLO.EVENT_COLORS.map(function (c) { return '<option value="' + c + '"' + (c === t.color ? ' selected' : '') + '>' + COLOR_LABELS[c] + '</option>'; }).join('') +
+        '</select>' +
+        '<span class="workshop-badge badge-c-' + esc(t.color) + '">' + esc(t.label || 'Preview') + '</span>' +
+        '<span class="wsite-prow-btns">' +
+          (used ? '<span class="wsite-hint wsite-srow-now">Used by ' + used + (used === 1 ? ' event' : ' events') + '</span>'
+                : '<button type="button" class="wsite-small wsite-small--danger" data-tact="del">Delete</button>') +
+        '</span></div>';
+    }).join('');
+
+    panel.innerHTML = cardOpen('Workshops & Events', 'Settings for the whole section: its heading, the tab names, the \u201CComing Up\u201D banner and the event types.') +
+      '<h4 class="wsite-subhead">Section heading</h4>' +
+      '<div class="wsite-three">' +
+        field('Small label', 'Small text above the title.', '<input type="text" class="admin-panel-input" id="wc-label" maxlength="80" value="' + esc(h.label) + '">') +
+        field('Title', 'The main heading.', '<input type="text" class="admin-panel-input" id="wc-title" maxlength="120" value="' + esc(h.title) + '">') +
+        field('Sub-text', 'Line breaks are kept.', '<textarea class="admin-panel-input" id="wc-sub" rows="2" maxlength="300">' + esc(h.sub) + '</textarea>') +
+      '</div>' +
+      '<div class="wsite-form"><div class="wsite-three">' +
+        field('First tab name', '', '<input type="text" class="admin-panel-input" id="wt-up" maxlength="30" value="' + esc(d.tabLabels.upcoming) + '">') +
+        field('Second tab name', 'Shown once there is a visible past event.', '<input type="text" class="admin-panel-input" id="wt-past" maxlength="30" value="' + esc(d.tabLabels.past) + '">') +
+        field('Text when there are no upcoming events', '', '<input type="text" class="admin-panel-input" id="wt-empty" maxlength="120" value="' + esc(d.emptyText) + '">') +
+      '</div></div>' +
+
+      '<h4 class="wsite-subhead">\u201CComing Up\u201D banner</h4>' +
+      '<p class="wsite-hint">The coloured strip under the hero.</p>' +
+      '<div class="wsite-checks wsite-radios">' +
+        ['auto|Automatic \u2013 announce the next upcoming event (hidden when there is none)', 'custom|Custom text', 'off|Hidden'].map(function (o) {
+          var p = o.split('|');
+          return '<label><input type="radio" name="wb-mode" value="' + p[0] + '"' + (b.mode === p[0] ? ' checked' : '') + '> ' + esc(p[1]) + '</label>';
+        }).join('') +
+      '</div>' +
+      '<div class="wsite-form"><div class="wsite-three">' +
+        field('Badge text', '', '<input type="text" class="admin-panel-input" id="wb-badge" maxlength="30" value="' + esc(b.badge) + '">') +
+        field('Custom text', 'Used when \u201CCustom text\u201D is chosen.', '<input type="text" class="admin-panel-input" id="wb-text" maxlength="200" value="' + esc(b.text) + '"' + (b.mode === 'custom' ? '' : ' disabled') + '>') +
+        field('Link text', 'Leave empty to hide the link.', '<input type="text" class="admin-panel-input" id="wb-linklabel" maxlength="40" value="' + esc(b.linkLabel) + '">') +
+      '</div>' +
+      field('Link', 'e.g. #workshops or https://\u2026', '<input type="text" class="admin-panel-input" id="wb-link" maxlength="300" value="' + esc(b.link) + '">') + '</div>' +
+
+      '<div class="wsite-subhead-row"><h4 class="wsite-subhead">Event types (' + d.types.length + ')</h4>' +
+        '<button type="button" class="btn-admin-add" id="wt-add"' + (d.types.length >= 12 ? ' disabled' : '') + '>+ Add type</button></div>' +
+      '<p class="wsite-hint">Each event has a type, shown as a small coloured badge (for example Workshop or Lunch). A type that is in use cannot be deleted.</p>' +
+      typeRows +
+      actions('we') + '</div>';
+
+    wireSubTabs();
+    wireEventsCommon();
+    var statusEl = panel.querySelector('#we-status');
+    function touch() { dirty = true; setStatus(statusEl, ''); }
+    function bind(id, fn) { panel.querySelector(id).addEventListener('input', function (ev) { fn(ev.target.value); touch(); }); }
+    bind('#wc-label', function (v) { h.label = v; }); bind('#wc-title', function (v) { h.title = v; }); bind('#wc-sub', function (v) { h.sub = v; });
+    bind('#wt-up', function (v) { d.tabLabels.upcoming = v; }); bind('#wt-past', function (v) { d.tabLabels.past = v; }); bind('#wt-empty', function (v) { d.emptyText = v; });
+    bind('#wb-badge', function (v) { b.badge = v; }); bind('#wb-text', function (v) { b.text = v; });
+    bind('#wb-linklabel', function (v) { b.linkLabel = v; }); bind('#wb-link', function (v) { b.link = v; });
+    panel.querySelectorAll('[name="wb-mode"]').forEach(function (r) {
+      r.addEventListener('change', function (ev) {
+        b.mode = ev.target.value; dirty = true;
+        panel.querySelector('#wb-text').disabled = b.mode !== 'custom';
+        setStatus(statusEl, '');
+      });
+    });
+    panel.querySelectorAll('[data-ti]').forEach(function (row) {
+      var i = parseInt(row.getAttribute('data-ti'), 10);
+      row.addEventListener('input', function (ev) {
+        if (ev.target.getAttribute('data-tf') !== 'label') return;
+        d.types[i].label = ev.target.value; touch();
+        var badge = row.querySelector('.workshop-badge'); badge.textContent = ev.target.value || 'Preview';
+      });
+      row.addEventListener('change', function (ev) {
+        if (ev.target.getAttribute('data-tf') !== 'color') return;
+        d.types[i].color = ev.target.value; touch();
+        row.querySelector('.workshop-badge').className = 'workshop-badge badge-c-' + ev.target.value;
+      });
+      row.addEventListener('click', function (ev) {
+        var del = ev.target.closest('[data-tact="del"]');
+        if (!del) return;
+        if (d.types.length <= 1) { setStatus(statusEl, 'At least one event type is needed.', 'err'); return; }
+        d.types.splice(i, 1); dirty = true; renderEventSettings();
+      });
+    });
+    panel.querySelector('#wt-add').addEventListener('click', function () {
+      d.types.push({ id: FLO.newId('ty'), label: '', color: 'teal' }); dirty = true; renderEventSettings();
+      var inputs = panel.querySelectorAll('[data-tf="label"]');
+      if (inputs.length) inputs[inputs.length - 1].focus();
+    });
+  }
+
+  /* — Save (shared by every Events screen) — */
+  function evLinkOk(label, link) {
+    return !String(label || '').trim() || !String(link || '').trim() || /^(#|https?:\/\/|mailto:|tel:)/i.test(String(link).trim());
+  }
+  function validateEvents(d) {
+    var seen = {};
+    for (var i = 0; i < d.types.length; i++) {
+      var lab = d.types[i].label.trim();
+      if (!lab) return 'Every event type needs a name (type ' + (i + 1) + ').';
+      if (seen[lab.toLowerCase()]) return 'Two event types are both called \u201C' + lab + '\u201D.';
+      seen[lab.toLowerCase()] = true;
+    }
+    if (!d.types.length) return 'At least one event type is needed.';
+    var ids = {};
+    d.types.forEach(function (t) { ids[t.id] = true; });
+    for (var u = 0; u < d.upcoming.length; u++) {
+      var e = d.upcoming[u];
+      if (!e.title.trim()) return 'Every upcoming event needs a title.';
+      if (!FLO.validDate(e.date)) return '\u201C' + e.title + '\u201D needs a valid date.';
+      if (!ids[e.typeId]) return '\u201C' + e.title + '\u201D needs an event type.';
+      if (!evLinkOk(e.buttonLabel, e.buttonLink)) return 'The button link on \u201C' + e.title + '\u201D must start with #, https://, mailto: or tel:.';
+    }
+    for (var p = 0; p < d.past.length; p++) {
+      var q = d.past[p];
+      if (!q.title.trim()) return 'Every past event needs a title.';
+      if (!FLO.validDate(q.date)) return '\u201C' + q.title + '\u201D needs a valid date.';
+    }
+    if (d.banner.mode === 'custom' && !d.banner.text.trim()) return 'The banner is set to custom text, but the text is empty.';
+    if (!evLinkOk(d.banner.linkLabel, d.banner.link)) return 'The banner link must start with #, https://, mailto: or tel:.';
+    if (!d.tabLabels.upcoming.trim() || !d.tabLabels.past.trim()) return 'Both tab names are needed.';
+    return null;
+  }
+
+  async function saveEvents(btn, statusEl) {
+    var d = draft.d;
+    var problem = validateEvents(d);
+    if (problem) { setStatus(statusEl, problem, 'err'); return; }
+    var tr = function (v) { return String(v == null ? '' : v).trim(); };
+    var out = {
+      header: { label: tr(d.header.label), title: tr(d.header.title), sub: tr(d.header.sub) },
+      tabLabels: { upcoming: tr(d.tabLabels.upcoming), past: tr(d.tabLabels.past) },
+      emptyText: tr(d.emptyText),
+      banner: { mode: d.banner.mode, badge: tr(d.banner.badge), text: tr(d.banner.text), linkLabel: tr(d.banner.linkLabel), link: tr(d.banner.link) || '#' },
+      types: d.types.map(function (t) { return { id: t.id, label: tr(t.label), color: t.color }; }),
+      upcoming: d.upcoming.map(function (e) {
+        return { id: e.id, typeId: e.typeId, date: e.date, time: e.time || '', title: tr(e.title), desc: tr(e.desc),
+                 duration: tr(e.duration), location: tr(e.location), spots: tr(e.spots), price: tr(e.price),
+                 buttonLabel: tr(e.buttonLabel), buttonLink: tr(e.buttonLink) || '#', hidden: e.hidden };
+      }),
+      past: d.past.map(function (e) {
+        return { id: e.id, typeId: e.typeId, date: e.date, title: tr(e.title), text: tr(e.text), images: e.images.slice(), hidden: e.hidden };
+      })
+    };
+    btn.disabled = true;
+    setStatus(statusEl, 'Saving\u2026', 'busy');
+    var next = FLO.clone(FLO.website);
+    next.events = out;
+    var res = await FLO.saveWebsite(next);
+    btn.disabled = false;
+    if (!res.ok) { setStatus(statusEl, res.error, 'err'); return; }
+    var sub = draft.sub, view = draft.view, editId = draft.editId;
+    dirty = false;
+    draft = null;
+    ensureEventsDraft();
+    draft.sub = sub; draft.view = view; draft.editId = editId;
+    renderEvents();
+    setStatus(panel.querySelector('.wsite-status'), 'Saved. The public page is updated.', 'ok');
   }
 
   /* ── Page order & visibility ────────────────────────── */

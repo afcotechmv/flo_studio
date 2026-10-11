@@ -142,8 +142,8 @@
 
   // Resize so the longest side is at most maxDim. PNG stays PNG so
   // transparency (class icons) is preserved; everything else becomes JPEG.
-  async function compress(file, maxDim, quality) {
-    if (file.type === 'image/gif') return { blob: file, ext: 'gif', type: 'image/gif' };
+  async function compress(file, maxDim, quality, forceJpeg) {
+    if (file.type === 'image/gif' && !forceJpeg) return { blob: file, ext: 'gif', type: 'image/gif' };
     var img = await loadBitmap(file);
     var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
     var w = Math.max(1, Math.round(img.width * scale));
@@ -151,8 +151,10 @@
     var canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var keepPng = file.type === 'image/png';
+    var ctx2d = canvas.getContext('2d');
+    if (forceJpeg) { ctx2d.fillStyle = '#ffffff'; ctx2d.fillRect(0, 0, w, h); }
+    ctx2d.drawImage(img, 0, 0, w, h);
+    var keepPng = file.type === 'image/png' && !forceJpeg;
     var outType = keepPng ? 'image/png' : 'image/jpeg';
     var blob = await new Promise(function (resolve) {
       canvas.toBlob(resolve, outType, quality);
@@ -192,6 +194,53 @@
       }
       var pub = FLO.sb.storage.from(BUCKET).getPublicUrl(path);
       return { ok: true, url: pub.data.publicUrl, path: path };
+    } catch (err) {
+      return { ok: false, error: String(err && err.message || err) };
+    }
+  };
+
+  /* ── Public address of a stored file ────────────────── */
+  FLO.storageUrl = function (path) {
+    return SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' + path;
+  };
+
+  // A gallery photo is stored as one path, e.g. "events/abc123.jpg". Its small
+  // thumbnail sits beside it with "-t" added: "events/abc123-t.jpg".
+  FLO.thumbPath = function (path) {
+    return String(path).replace(/(\.[a-z]+)$/i, '-t$1');
+  };
+  FLO.isGalleryPath = function (path) {
+    return /^events\/[A-Za-z0-9_-]+\.(jpg|png|webp|gif)$/.test(String(path || ''));
+  };
+
+  /**
+   * Upload a gallery photo as a pair: the full image (up to 1600 px) and a small
+   * thumbnail (up to 480 px), both JPEG. Returns { ok, path } or { ok:false, error }.
+   */
+  FLO.uploadImageSet = async function (file, folder) {
+    if (!FLO.sb) return { ok: false, error: 'The service could not be reached.' };
+    if (!file || !/^image\/(png|jpe?g|webp|gif)$/i.test(file.type || '')) {
+      return { ok: false, error: 'Please choose a PNG, JPG, WebP or GIF image.' };
+    }
+    try {
+      var full = await compress(file, 1600, 0.82, true);
+      var thumb = await compress(file, 480, 0.75, true);
+      if (full.blob.size > 5 * 1024 * 1024) {
+        return { ok: false, error: 'That image is still over 5 MB after compression. Please choose a smaller one.' };
+      }
+      var base = folder + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      var path = base + '.jpg';
+      var opts = { cacheControl: '31536000', contentType: 'image/jpeg', upsert: false };
+      var a = await FLO.sb.storage.from(BUCKET).upload(path, full.blob, opts);
+      if (a.error) {
+        if (/row-level security|not allowed|unauthorized/i.test(a.error.message || '')) {
+          return { ok: false, error: 'Upload not permitted. Sign out and in again with the admin account.' };
+        }
+        return { ok: false, error: a.error.message };
+      }
+      var b = await FLO.sb.storage.from(BUCKET).upload(base + '-t.jpg', thumb.blob, opts);
+      if (b.error) return { ok: false, error: b.error.message };
+      return { ok: true, path: path };
     } catch (err) {
       return { ok: false, error: String(err && err.message || err) };
     }

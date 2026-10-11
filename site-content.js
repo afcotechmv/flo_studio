@@ -790,6 +790,125 @@
           "hidden": false
         }
       ]
+    },
+    events: {
+      "header": {
+        "label": "Beyond the class",
+        "title": "Workshops & Events.",
+        "sub": "Deeper dives, shared moments, and special gatherings.\nOpen to all women — members and non-members alike."
+      },
+      "tabLabels": {
+        "upcoming": "Coming Up",
+        "past": "Past Events"
+      },
+      "emptyText": "No upcoming events scheduled.",
+      "banner": {
+        "mode": "auto",
+        "badge": "Coming Up",
+        "text": "",
+        "linkLabel": "Learn more →",
+        "link": "#workshops"
+      },
+      "types": [
+        {
+          "id": "workshop",
+          "label": "Workshop",
+          "color": "teal"
+        },
+        {
+          "id": "retreat",
+          "label": "Retreat",
+          "color": "purple"
+        },
+        {
+          "id": "gathering",
+          "label": "Gathering",
+          "color": "gold"
+        },
+        {
+          "id": "tea",
+          "label": "Tea",
+          "color": "tangerine"
+        }
+      ],
+      "upcoming": [
+        {
+          "id": "event-breathwork-stillness",
+          "typeId": "workshop",
+          "date": "2025-02-14",
+          "time": "16:00",
+          "title": "Breathwork & Stillness",
+          "desc": "A two-hour deep dive into conscious breathing and meditation with Aisha. Suitable for complete beginners and experienced practitioners alike.",
+          "duration": "2 hrs",
+          "location": "Studio · Mat room",
+          "spots": "8 spots left",
+          "price": "MVR 500",
+          "buttonLabel": "Register",
+          "buttonLink": "#",
+          "hidden": false
+        },
+        {
+          "id": "event-aerial-foundations",
+          "typeId": "workshop",
+          "date": "2025-02-28",
+          "time": "09:00",
+          "title": "Aerial Foundations",
+          "desc": "A half-day introduction to aerial movement for first-timers. Learn the basics of the hammock, breathing, and trust in a safe, women-only space.",
+          "duration": "3 hrs",
+          "location": "Studio · Aerial room",
+          "spots": "4 spots left",
+          "price": "MVR 750",
+          "buttonLabel": "Register",
+          "buttonLink": "#",
+          "hidden": false
+        },
+        {
+          "id": "event-island-wellness-retreat",
+          "typeId": "retreat",
+          "date": "2025-03-08",
+          "time": "07:00",
+          "title": "Island Wellness Retreat",
+          "desc": "A full-day retreat on a nearby island. Morning yoga, breathwork, a shared meal, and an afternoon of rest and reflection. Limited to 10 women.",
+          "duration": "Full day",
+          "location": "Island location · TBA",
+          "spots": "3 spots left",
+          "price": "MVR 2,500",
+          "buttonLabel": "Register",
+          "buttonLink": "#",
+          "hidden": false
+        },
+        {
+          "id": "event-women-s-circle",
+          "typeId": "gathering",
+          "date": "2025-03-15",
+          "time": "18:00",
+          "title": "Women's Circle",
+          "desc": "An open evening of gentle movement, sharing, and connection. No experience needed — just come as you are. Tea and light refreshments provided.",
+          "duration": "1.5 hrs",
+          "location": "Studio · Main room",
+          "spots": "Open",
+          "price": "Free",
+          "buttonLabel": "Register",
+          "buttonLink": "#",
+          "hidden": false
+        },
+        {
+          "id": "event-saturday-morning-tea",
+          "typeId": "tea",
+          "date": "2025-03-22",
+          "time": "10:00",
+          "title": "Saturday Morning Tea",
+          "desc": "A relaxed morning gathering after the 9:00 AM class. Tea, conversation, and community. Drop in, no registration needed.",
+          "duration": "1 hr",
+          "location": "Studio · Lounge",
+          "spots": "Open",
+          "price": "Free",
+          "buttonLabel": "Register",
+          "buttonLink": "#",
+          "hidden": false
+        }
+      ],
+      "past": []
     }
   };
 
@@ -853,6 +972,7 @@
     mergeCollection(stored, d, 'kids');
     mergeStory(stored, d);
     mergeTeam(stored, d);
+    mergeEvents(stored, d);
     return d;
   };
 
@@ -1054,6 +1174,343 @@
     }
     return html;
   };
+
+  /* ── Workshops & Events ─────────────────────────────── */
+  FLO.EVENT_COLORS = ['teal', 'purple', 'gold', 'tangerine', 'blue', 'rose', 'green', 'grey'];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  FLO.validDate = function (s) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(s || ''))) return false;
+    var p = s.split('-').map(Number);
+    var d = new Date(Date.UTC(p[0], p[1] - 1, p[2]));
+    return d.getUTCFullYear() === p[0] && d.getUTCMonth() === p[1] - 1 && d.getUTCDate() === p[2];
+  };
+
+  // Today's date in the Maldives (UTC+5), as YYYY-MM-DD, whatever the visitor's own timezone.
+  FLO.today = function () {
+    try {
+      var parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Indian/Maldives', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).formatToParts(new Date());
+      var o = {};
+      parts.forEach(function (x) { o[x.type] = x.value; });
+      return o.year + '-' + o.month + '-' + o.day;
+    } catch (e) {
+      var t = new Date(Date.now() + 5 * 3600 * 1000);
+      return t.toISOString().slice(0, 10);
+    }
+  };
+
+  FLO.dateParts = function (iso) {
+    var p = iso.split('-').map(Number);
+    var wd = new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
+    return { year: p[0], day: p[2], dayText: (p[2] < 10 ? '0' : '') + p[2], mon: MONTHS[p[1] - 1], weekday: WEEKDAYS[wd] };
+  };
+
+  FLO.fmtTime = function (t) {
+    var m = /^(\d{2}):(\d{2})$/.exec(String(t || ''));
+    if (!m) return '';
+    var h = parseInt(m[1], 10);
+    return (((h + 11) % 12) + 1) + ':' + m[2] + ' ' + (h >= 12 ? 'PM' : 'AM');
+  };
+
+  function cleanTime(t) {
+    var m = /^(\d{2}):(\d{2})$/.exec(String(t || ''));
+    return m && +m[1] < 24 && +m[2] < 60 ? t : '';
+  }
+
+  function mergeEvents(stored, d) {
+    var se = stored.events;
+    if (!se || typeof se !== 'object') return;
+    var t = d.events;
+    if (se.header && typeof se.header === 'object') {
+      t.header.label = str(se.header.label, 80, t.header.label);
+      t.header.title = str(se.header.title, 120, t.header.title);
+      t.header.sub = str(se.header.sub, 300, t.header.sub);
+    }
+    if (se.tabLabels && typeof se.tabLabels === 'object') {
+      t.tabLabels.upcoming = str(se.tabLabels.upcoming, 30, t.tabLabels.upcoming) || t.tabLabels.upcoming;
+      t.tabLabels.past = str(se.tabLabels.past, 30, t.tabLabels.past) || t.tabLabels.past;
+    }
+    t.emptyText = str(se.emptyText, 120, t.emptyText);
+    if (se.banner && typeof se.banner === 'object') {
+      var b = se.banner;
+      t.banner.mode = b.mode === 'custom' || b.mode === 'off' ? b.mode : 'auto';
+      t.banner.badge = str(b.badge, 30, t.banner.badge);
+      t.banner.text = str(b.text, 200, t.banner.text);
+      t.banner.linkLabel = str(b.linkLabel, 40, t.banner.linkLabel);
+      t.banner.link = str(b.link, 300, t.banner.link) || '#';
+    }
+
+    // Event types (keep the defaults if the stored list is unusable)
+    if (Array.isArray(se.types)) {
+      var tseen = {};
+      var types = se.types.map(function (x) {
+        if (!x || typeof x !== 'object') return null;
+        var id = String(x.id == null ? '' : x.id).replace(/[^a-z0-9_-]/gi, '').slice(0, 40);
+        var label = str(x.label, 30, '').trim();
+        if (!id || !label || tseen[id]) return null;
+        tseen[id] = true;
+        return { id: id, label: label, color: FLO.EVENT_COLORS.indexOf(x.color) !== -1 ? x.color : 'teal' };
+      }).filter(Boolean).slice(0, 12);
+      if (types.length) t.types = types;
+    }
+    var known = {};
+    t.types.forEach(function (x) { known[x.id] = true; });
+
+    if (Array.isArray(se.upcoming)) {
+      var useen = {};
+      t.upcoming = se.upcoming.map(function (e) {
+        if (!e || typeof e !== 'object') return null;
+        var title = str(e.title, 120, '').trim();
+        if (!title || !FLO.validDate(e.date)) return null;
+        var id = str(e.id, 40, '') || FLO.newId('e');
+        if (useen[id]) return null;
+        useen[id] = true;
+        return {
+          id: id, typeId: known[e.typeId] ? e.typeId : '', date: e.date, time: cleanTime(e.time), title: title,
+          desc: str(e.desc, 600, ''), duration: str(e.duration, 40, ''), location: str(e.location, 80, ''),
+          spots: str(e.spots, 40, ''), price: str(e.price, 40, ''), buttonLabel: str(e.buttonLabel, 40, ''),
+          buttonLink: str(e.buttonLink, 300, '#') || '#', hidden: e.hidden === true
+        };
+      }).filter(Boolean).slice(0, 60);
+    }
+
+    if (Array.isArray(se.past)) {
+      var pseen = {};
+      t.past = se.past.map(function (e) {
+        if (!e || typeof e !== 'object') return null;
+        var title = str(e.title, 120, '').trim();
+        if (!title || !FLO.validDate(e.date)) return null;
+        var id = str(e.id, 40, '') || FLO.newId('p');
+        if (pseen[id]) return null;
+        pseen[id] = true;
+        return {
+          id: id, typeId: known[e.typeId] ? e.typeId : '', date: e.date, title: title,
+          text: str(e.text, 4000, ''),
+          images: list(e.images).filter(FLO.isGalleryPath).slice(0, 24),
+          hidden: e.hidden === true
+        };
+      }).filter(Boolean).slice(0, 60);
+    }
+  }
+
+  function typeOf(w, id) {
+    return w.events.types.filter(function (x) { return x.id === id; })[0] || null;
+  }
+
+  // Upcoming = visible and not yet past, soonest first.
+  FLO.upcomingList = function (w) {
+    var today = FLO.today();
+    return w.events.upcoming.filter(function (e) { return !e.hidden && e.date >= today; })
+      .sort(function (a, b) { return (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')); });
+  };
+  // Past = visible, most recent first.
+  FLO.pastList = function (w) {
+    return w.events.past.filter(function (e) { return !e.hidden; })
+      .sort(function (a, b) { return b.date.localeCompare(a.date); });
+  };
+
+  function badgeHTML(w, typeId) {
+    var t = typeOf(w, typeId);
+    return t ? '<span class="workshop-badge badge-c-' + FLO.esc(t.color) + '">' + FLO.esc(t.label) + '</span>' : '';
+  }
+
+  FLO.upcomingItemHTML = function (e, w) {
+    var esc = FLO.esc, dp = FLO.dateParts(e.date);
+    var when = dp.weekday + (e.time ? ' \u00B7 ' + FLO.fmtTime(e.time) : '');
+    var meta = '<span>' + esc(when) + '</span>' +
+      (e.duration ? '<span>' + esc(e.duration) + '</span>' : '') +
+      (e.location ? '<span>' + esc(e.location) + '</span>' : '') +
+      (e.spots ? '<span class="spots-left">' + esc(e.spots) + '</span>' : '');
+    return '<div class="workshop-item">' +
+      '<div class="workshop-left">' + badgeHTML(w, e.typeId) +
+        '<div class="workshop-date"><span class="workshop-day">' + dp.dayText + '</span><span class="workshop-month">' + dp.mon + '</span></div>' +
+      '</div>' +
+      '<div class="workshop-main"><h3>' + esc(e.title) + '</h3>' +
+        (e.desc ? '<p class="workshop-desc">' + esc(e.desc) + '</p>' : '') +
+        '<div class="workshop-meta">' + meta + '</div></div>' +
+      '<div class="workshop-right">' +
+        (e.price ? '<p class="workshop-price">' + esc(e.price) + '</p>' : '') +
+        (e.buttonLabel ? '<a href="' + esc(FLO.safeHref(e.buttonLink)) + '" class="btn">' + esc(e.buttonLabel) + '</a>' : '') +
+      '</div>' +
+    '</div>';
+  };
+
+  FLO.pastEventHTML = function (e, w) {
+    var esc = FLO.esc, dp = FLO.dateParts(e.date);
+    var paras = String(e.text || '').split(/\r?\n\s*\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    var imgs = e.images || [];
+    var gallery = imgs.length
+      ? '<div class="past-gallery">' + imgs.map(function (path, i) {
+          return '<button type="button" class="past-thumb" data-pi="' + i + '" aria-label="' +
+            esc('Open photo ' + (i + 1) + ' of ' + imgs.length + ': ' + e.title) + '">' +
+            '<img src="' + esc(FLO.storageUrl(FLO.thumbPath(path))) + '" alt="' + esc(e.title) + ' \u2013 photo ' + (i + 1) + '" loading="lazy" /></button>';
+        }).join('') + '</div>'
+      : '';
+    return '<article class="past-event" data-peid="' + esc(e.id) + '">' +
+      '<div class="past-event-head">' + badgeHTML(w, e.typeId) +
+        '<span class="past-event-date">' + dp.day + ' ' + dp.mon + ' ' + dp.year + '</span></div>' +
+      '<h3>' + esc(e.title) + '</h3>' +
+      (paras.length ? '<div class="past-event-text">' + paras.map(function (x) { return '<p>' + esc(x) + '</p>'; }).join('') + '</div>' : '') +
+      gallery +
+    '</article>';
+  };
+
+  FLO.bannerText = function (e) {
+    var dp = FLO.dateParts(e.date);
+    return e.title + ' \u00B7 ' + dp.weekday + ' ' + dp.day + ' ' + dp.mon + (e.time ? ' \u00B7 ' + FLO.fmtTime(e.time) : '');
+  };
+
+  /* ── Photo viewer (lightbox) ────────────────────────── */
+  var lb = null;
+  function lightbox() {
+    if (lb) return lb;
+    var el = document.createElement('div');
+    el.className = 'flo-lightbox';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', 'Photo viewer');
+    el.hidden = true;
+    el.innerHTML =
+      '<button type="button" class="flo-lb-close" aria-label="Close photo viewer">\u2715</button>' +
+      '<button type="button" class="flo-lb-nav flo-lb-prev" aria-label="Previous photo">\u2039</button>' +
+      '<figure class="flo-lb-figure"><img class="flo-lb-img" alt="" /><figcaption class="flo-lb-cap"></figcaption></figure>' +
+      '<button type="button" class="flo-lb-nav flo-lb-next" aria-label="Next photo">\u203A</button>';
+    document.body.appendChild(el);
+    lb = { el: el, img: el.querySelector('.flo-lb-img'), cap: el.querySelector('.flo-lb-cap'), urls: [], i: 0, title: '', from: null };
+    function show() {
+      lb.img.src = lb.urls[lb.i];
+      lb.img.alt = lb.title + ' \u2013 photo ' + (lb.i + 1);
+      lb.cap.textContent = lb.title + ' \u00B7 ' + (lb.i + 1) + ' / ' + lb.urls.length;
+      el.querySelector('.flo-lb-prev').hidden = el.querySelector('.flo-lb-next').hidden = lb.urls.length < 2;
+    }
+    function step(n) { lb.i = (lb.i + n + lb.urls.length) % lb.urls.length; show(); }
+    function close() {
+      el.hidden = true;
+      document.body.classList.remove('flo-lb-open');
+      lb.img.removeAttribute('src');
+      if (lb.from && lb.from.focus) lb.from.focus();
+    }
+    el.addEventListener('click', function (e) {
+      if (e.target === el || e.target.closest('.flo-lb-close')) close();
+      else if (e.target.closest('.flo-lb-prev')) step(-1);
+      else if (e.target.closest('.flo-lb-next')) step(1);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (el.hidden) return;
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
+    });
+    lb.open = function (urls, i, title, from) {
+      lb.urls = urls; lb.i = i; lb.title = title; lb.from = from;
+      el.hidden = false;
+      document.body.classList.add('flo-lb-open');
+      show();
+      el.querySelector('.flo-lb-close').focus();
+    };
+    return lb;
+  }
+
+  /* ── Apply events to the page ───────────────────────── */
+  FLO.eventsTab = 'upcoming';
+
+  function applyBanner(w) {
+    var el = document.querySelector('.event-banner');
+    if (!el) return;
+    var b = w.events.banner, next = FLO.upcomingList(w)[0], text = '';
+    if (b.mode === 'custom' && b.text.trim()) text = b.text.trim();
+    else if (b.mode === 'auto' && next) text = FLO.bannerText(next);
+    el.classList.toggle('banner-off', !text);
+    if (!text) return;
+    var badge = el.querySelector('.event-banner-badge');
+    var txt = el.querySelector('.event-banner-text');
+    var link = el.querySelector('.event-banner-link');
+    if (badge) { badge.textContent = b.badge; badge.hidden = !b.badge; }
+    if (txt) txt.textContent = text;
+    if (link) {
+      link.textContent = b.linkLabel;
+      link.hidden = !b.linkLabel;
+      link.setAttribute('href', FLO.safeHref(b.link));
+    }
+  }
+
+  function applyEvents(w) {
+    var sec = document.querySelector('#workshops');
+    if (!sec) return;
+    var ev = w.events, esc = FLO.esc;
+    var hdr = sec.querySelector('.section-header');
+    if (hdr) {
+      var label = hdr.querySelector('.section-label');
+      var title = hdr.querySelector('.section-title');
+      var sub = hdr.querySelector('.section-sub');
+      if (label) label.textContent = ev.header.label;
+      if (title) title.textContent = ev.header.title;
+      if (sub) sub.innerHTML = esc(ev.header.sub).replace(/\r?\n/g, '<br>');
+    }
+
+    var up = FLO.upcomingList(w), past = FLO.pastList(w);
+    var tabbed = past.length > 0;
+    var active = tabbed && FLO.eventsTab === 'past' ? 'past' : 'upcoming';
+
+    sec.querySelectorAll('.events-tabs, .workshops-list, .past-events').forEach(function (n) { n.remove(); });
+
+    var html = '';
+    if (tabbed) {
+      html += '<div class="events-tabs" role="tablist" aria-label="Events">' +
+        '<button type="button" role="tab" class="events-tab' + (active === 'upcoming' ? ' active' : '') + '" id="eventsTabUpcoming" data-etab="upcoming" aria-controls="eventsUpcoming" aria-selected="' + (active === 'upcoming') + '" tabindex="' + (active === 'upcoming' ? 0 : -1) + '">' + esc(ev.tabLabels.upcoming) + '</button>' +
+        '<button type="button" role="tab" class="events-tab' + (active === 'past' ? ' active' : '') + '" id="eventsTabPast" data-etab="past" aria-controls="eventsPast" aria-selected="' + (active === 'past') + '" tabindex="' + (active === 'past' ? 0 : -1) + '">' + esc(ev.tabLabels.past) + '</button>' +
+      '</div>';
+    }
+    html += '<div class="workshops-list" id="eventsUpcoming"' +
+      (tabbed ? ' role="tabpanel" aria-labelledby="eventsTabUpcoming"' : '') + (active === 'past' ? ' hidden' : '') + '>' +
+      (up.length ? up.map(function (e) { return FLO.upcomingItemHTML(e, w); }).join('')
+                 : '<p class="events-empty">' + esc(ev.emptyText) + '</p>') +
+    '</div>';
+    if (tabbed) {
+      html += '<div class="past-events" id="eventsPast" role="tabpanel" aria-labelledby="eventsTabPast"' + (active === 'upcoming' ? ' hidden' : '') + '>' +
+        past.map(function (e) { return FLO.pastEventHTML(e, w); }).join('') + '</div>';
+    }
+    sec.insertAdjacentHTML('beforeend', html);
+
+    if (tabbed) {
+      var tabs = sec.querySelectorAll('.events-tab');
+      var select = function (key, focus) {
+        FLO.eventsTab = key;
+        tabs.forEach(function (t) {
+          var on = t.getAttribute('data-etab') === key;
+          t.classList.toggle('active', on);
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.tabIndex = on ? 0 : -1;
+          if (on && focus) t.focus();
+        });
+        sec.querySelector('#eventsUpcoming').hidden = key !== 'upcoming';
+        sec.querySelector('#eventsPast').hidden = key !== 'past';
+      };
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () { select(t.getAttribute('data-etab'), false); });
+        t.addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            var order = ['upcoming', 'past'];
+            var cur = order.indexOf(t.getAttribute('data-etab'));
+            var nxt = e.key === 'Home' ? 0 : e.key === 'End' ? 1 : (cur + (e.key === 'ArrowRight' ? 1 : -1) + 2) % 2;
+            select(order[nxt], true);
+          }
+        });
+      });
+      sec.querySelector('#eventsPast').addEventListener('click', function (e) {
+        var btn = e.target.closest('.past-thumb');
+        if (!btn) return;
+        var card = btn.closest('[data-peid]');
+        var found = FLO.website.events.past.filter(function (x) { return x.id === card.getAttribute('data-peid'); })[0];
+        if (!found) return;
+        lightbox().open(found.images.map(FLO.storageUrl), parseInt(btn.getAttribute('data-pi'), 10), found.title, btn);
+      });
+    }
+  }
 
   /* ── Hero rendering (shared by page and admin preview) ── */
   FLO.heroHTML = function (h) {
@@ -1281,6 +1738,8 @@
       applyClasses(w);
       applyKids(w);
       applyTeam(w);
+      applyEvents(w);
+      applyBanner(w);
       applyStory(w);   // last: a number in the story row can count class and team cards
     } catch (err) {
       console.error('FLO: could not apply website content.', err);
@@ -1304,14 +1763,17 @@
   // useCache: apply the cached copy immediately (public page load).
   // The admin editor passes false so it always edits fresh server data.
   FLO.loadWebsite = async function (useCache) {
+    var hadCache = false;
     if (useCache !== false) {
       var cached = readCache();
       if (cached) {
+        hadCache = true;
         FLO.website = FLO.mergeWebsite(cached);
         FLO.applyWebsite(FLO.website);
       }
     }
     var res = await FLO.settings.get('website');
+    if (!res.ok && !hadCache) FLO.applyWebsite(FLO.website);   // e.g. offline on a first visit
     if (res.ok) {
       FLO.website = FLO.mergeWebsite(res.value);
       writeCache(res.value);
