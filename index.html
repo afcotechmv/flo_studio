@@ -135,7 +135,7 @@
             <div class="modal-box modal-box--wide">
                 <button class="modal-close" id="newClassModalClose">✕</button>
                 <div class="modal-logo" id="newClassModalTitle">New Class</div>
-                <p class="modal-tagline" id="newClassModalTagline">Define the class. You'll add its schedule separately.</p>
+                <p class="modal-tagline" id="newClassModalTagline">Define the class, then press Schedule on its card to add its times.</p>
                 <input type="hidden" id="editingClassId" value="" />
 
                 <div class="child-form">
@@ -198,6 +198,20 @@
                                 <option value="pink">Pink</option>
                                 <option value="lavender">Lavender</option>
                                 <option value="skyblue">Sky Blue</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="child-form-row">
+                        <div class="settings-field">
+                            <label>Price (MVR per month, per weekly slot)</label>
+                            <input type="number" id="newClassPrice" placeholder="e.g. 450" min="0" step="1" />
+                        </div>
+                        <div class="settings-field">
+                            <label>Public website</label>
+                            <select id="newClassShow" class="settings-select">
+                                <option value="true">Show on the website</option>
+                                <option value="false">Keep off the website</option>
                             </select>
                         </div>
                     </div>
@@ -2744,6 +2758,7 @@
         </div>
         <script src="data.js"></script>
         <script src="site-config.js"></script>
+        <script src="site-studio.js"></script>
         <script src="site-content.js"></script>
         <script src="site-admin.js"></script>
         <script src="site-accounts.js"></script>
@@ -2859,6 +2874,7 @@
             }
             if (user.role === 'admin')      adminPortal.classList.add('portal-active');
             if (window.FLO && FLO.afterLogin) FLO.afterLogin(user.role);
+            if (user.role === 'admin' && window.FLO && FLO.studio) FLO.studio.enterAdmin();
 
             // Change navbar login button to show who's in
             loginBtn.textContent = 'Logout';
@@ -2903,11 +2919,15 @@
                 return btn.dataset.class + '-' + btn.dataset.day + '-' + btn.dataset.time;
             }
 
+            // Kept once at start-up: rewriting the list below removes the element
+            // from the page, so looking it up again later would find nothing.
+            const enrolEmptyEl = document.getElementById('enrolEmpty');
+
             function updateEnrolSidebar() {
                 const list   = document.getElementById('enrolList');
                 const total  = document.getElementById('enrolTotal');
                 const btnEnrol = document.getElementById('btnEnrol');
-                const empty  = document.getElementById('enrolEmpty');
+                const empty  = enrolEmptyEl;
 
                 const items = Object.values(enrolment);
 
@@ -2931,10 +2951,10 @@
                     div.className = 'enrol-item';
                     div.innerHTML = `
                         <div class="enrol-item-info">
-                            <span class="enrol-item-name">${item.className}</span>
-                            <span class="enrol-item-day">${item.day} · ${item.time}</span>
+                            <span class="enrol-item-name">${escHtml(item.className)}</span>
+                            <span class="enrol-item-day">${escHtml(item.day)} · ${escHtml(item.time)}</span>
                         </div>
-                        <span class="enrol-item-price">MVR ${item.price}</span>
+                        <span class="enrol-item-price">MVR ${escHtml(item.price)}</span>
                     `;
                     list.appendChild(div);
                 });
@@ -2944,6 +2964,7 @@
             }
 
             // Attach click listeners to every timetable slot
+            function wireTimetableSlots() {
             document.querySelectorAll('.tt-slot.available, .tt-slot.selected').forEach(function(btn) {
                 btn.addEventListener('click', function() {
                     const id = getSlotId(this);
@@ -2952,7 +2973,7 @@
                         // Deselect — remove from enrolment
                         this.classList.remove('selected');
                         this.classList.add('available');
-                        this.querySelector('.tt-slot-meta').textContent = this.dataset.spots + ' spots';
+                        this.querySelector('.tt-slot-meta').textContent = this.dataset.spots ? this.dataset.spots + ' spots' : 'Open';
                         delete enrolment[id];
                     } else {
                         // Select — add to enrolment
@@ -2970,6 +2991,12 @@
                     updateEnrolSidebar();
                 });
             });
+            }
+            wireTimetableSlots();
+
+            // Class names and times come from the studio database, so they are
+            // escaped wherever they are written back into the page.
+            function escHtml(v) { return (window.FLO && FLO.esc) ? FLO.esc(v) : String(v); }
 
             // Confirm button — shows payment modal
             document.getElementById('btnEnrol').addEventListener('click', function() {
@@ -2981,7 +3008,7 @@
                 summary.innerHTML =
                     items.map(function(item) {
                         return '<div class="payment-summary-row">' +
-                            '<span>' + item.className + ' · ' + item.day + ' · ' + item.time + '</span>' +
+                            '<span>' + escHtml(item.className) + ' · ' + escHtml(item.day) + ' · ' + escHtml(item.time) + '</span>' +
                             '<span>MVR ' + parseInt(item.price).toLocaleString() + '</span>' +
                         '</div>';
                     }).join('') +
@@ -3017,7 +3044,7 @@
                 const slots = document.querySelectorAll('.timetable .tt-slot');
 
                 // Group by day — preserve day order
-                const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Sat'];
+                const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 const byDay = {};
                 dayOrder.forEach(d => byDay[d] = []);
 
@@ -3055,9 +3082,9 @@
 
                         slotDiv.innerHTML =
                             '<div class="ms-slot-info">' +
-                                '<span class="ms-slot-name">' + className + '</span>' +
-                                '<span class="ms-slot-meta">' + time + (isFull ? ' · Full' : ' · ' + spots + ' spots') + '</span>' +
-                                '<span class="ms-slot-price">MVR ' + price + ' / month</span>' +
+                                '<span class="ms-slot-name">' + escHtml(className) + '</span>' +
+                                '<span class="ms-slot-meta">' + escHtml(time) + (isFull ? ' · Full' : (spots ? ' · ' + escHtml(spots) + ' spots' : ' · Open')) + '</span>' +
+                                '<span class="ms-slot-price">' + (Number(price) > 0 ? 'MVR ' + escHtml(price) + ' / month' : 'Price to be confirmed') + '</span>' +
                             '</div>' +
                             '<button class="ms-slot-btn ' + (isFull ? 'full' : isSelected ? 'selected' : 'available') + '"' +
                                 (isFull ? ' disabled' : '') + '>' +
@@ -3833,6 +3860,8 @@
                             const input = item.querySelector('.config-edit-input');
                             const newName = input.value.trim();
                             if (!newName) return;
+                            // Classes keep their room by name, so they follow a rename.
+                            classes.forEach(function(c) { if (c.room === room.name) c.room = newName; });
                             room.name = newName;
                             item.classList.remove('editing');
                             buildConfigRoomList();
@@ -3872,7 +3901,9 @@
                     errEl.textContent = 'A room with that name already exists.'; return;
                 }
                 errEl.textContent = '';
-                const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                let id = (name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'room').slice(0, 50);
+                let roomSuffix = 2; const roomBase = id;
+                while (rooms.some(r => r.id === id)) { id = roomBase + '-' + roomSuffix; roomSuffix++; }
                 rooms.push({ id, name });
                 input.value = '';
                 buildConfigRoomList();
@@ -4021,7 +4052,9 @@
                     errEl.textContent = 'A track with label "' + label + '" already exists.'; return;
                 }
                 errEl.textContent = '';
-                const id = label;
+                let id = (label.replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'track').slice(0, 50);
+                const trackBase = id; let trackSuffix = 2;
+                while (tracks.some(t => t.id === id)) { id = trackBase + '-' + trackSuffix; trackSuffix++; }
                 tracks.push({ id, name, label, days });
                 nameInput.value  = '';
                 labelInput.value = '';
@@ -4315,7 +4348,7 @@
                     }
                 } else {
                     // ── CREATE ──
-                    let baseId = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    let baseId = (name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'instructor').slice(0, 50);
                     let newId = baseId; let s = 2;
                     while (instructors.some(i => i.id === newId)) { newId = baseId + '-' + s; s++; }
 
@@ -4592,6 +4625,8 @@
                                     (cls.fixed ? 'Fixed' : 'Flexible') +
                                 '</span>' +
                                 (isInactive ? '<button class="btn-admin-reactivate" data-class-id="' + cls.id + '">Reactivate</button>' : '') +
+                                (cls.audience === 'adult' && !isInactive && FLO.studio
+                                    ? '<button class="btn-admin-edit-class btn-admin-class-schedule" data-class-id="' + cls.id + '">Schedule (' + FLO.studio.slotCount(cls.id) + ')</button>' : '') +
                                 '<button class="btn-admin-edit-class" data-class-id="' + cls.id + '">Edit</button>' +
                                 '<button class="btn-admin-delete-class" data-class-id="' + cls.id + '">' + (isInactive ? 'Delete' : 'Deactivate') + '</button>' +
                             '</div>' +
@@ -4600,6 +4635,8 @@
                             '<span>' + cls.room + '</span>' +
                             '<span>' + cls.durationMin + ' min</span>' +
                             (cls.maxSize ? '<span>Max ' + cls.maxSize + ' students</span>' : '') +
+                            (cls.audience === 'adult' ? '<span>' + (cls.priceMvr == null ? 'No price set' : 'MVR ' + cls.priceMvr + ' / month') + '</span>' : '') +
+                            (cls.audience === 'adult' && cls.showOnWebsite === false ? '<span>Not on website</span>' : '') +
                         '</div>' +
                     '</div>';
                 });
@@ -4607,9 +4644,16 @@
                 container.innerHTML = html;
 
                 // Wire Edit buttons
-                container.querySelectorAll('.btn-admin-edit-class').forEach(function(btn) {
+                container.querySelectorAll('.btn-admin-edit-class:not(.btn-admin-class-schedule)').forEach(function(btn) {
                     btn.addEventListener('click', function() {
                         openEditClassModal(this.getAttribute('data-class-id'));
+                    });
+                });
+
+                // Wire Schedule buttons (the class's weekly times)
+                container.querySelectorAll('.btn-admin-class-schedule').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        FLO.studio.openSchedule(this.getAttribute('data-class-id'));
                     });
                 });
 
@@ -4659,6 +4703,8 @@
                 document.getElementById('newClassDuration').value = cls.durationMin || '';
                 document.getElementById('newClassMaxSize').value = cls.maxSize || '';
                 document.getElementById('newClassColor').value = cls.colorKey || 'teal';
+                document.getElementById('newClassPrice').value = (cls.priceMvr === null || cls.priceMvr === undefined) ? '' : cls.priceMvr;
+                document.getElementById('newClassShow').value = cls.showOnWebsite === false ? 'false' : 'true';
 
                 // Fixed/flexible toggle
                 newClassFixedValue = cls.fixed || false;
@@ -4755,10 +4801,12 @@
                 document.getElementById('newClassDuration').value = '';
                 document.getElementById('newClassMaxSize').value = '';
                 document.getElementById('newClassColor').value = 'teal';
+                document.getElementById('newClassPrice').value = '';
+                document.getElementById('newClassShow').value = 'true';
                 document.getElementById('newClassFormNote').textContent = '';
                 document.getElementById('editingClassId').value = '';
                 document.getElementById('newClassModalTitle').textContent = 'New Class';
-                document.getElementById('newClassModalTagline').textContent = 'Define the class. You\'ll add its schedule separately.';
+                document.getElementById('newClassModalTagline').textContent = 'Define the class, then press Schedule on its card to add its times.';
                 document.getElementById('btnSubmitNewClass').textContent = 'Create Class →';
                 newClassFixedValue = false;
                 document.querySelectorAll('.admin-fixed-toggle-option').forEach(b => b.classList.remove('active'));
@@ -4773,12 +4821,16 @@
                 const duration     = parseInt(document.getElementById('newClassDuration').value, 10);
                 const maxSize      = parseInt(document.getElementById('newClassMaxSize').value, 10) || null;
                 const colorKey     = document.getElementById('newClassColor').value;
+                const priceRaw     = document.getElementById('newClassPrice').value.trim();
+                const priceMvr     = priceRaw === '' ? null : parseInt(priceRaw, 10);
+                const showOnWebsite = document.getElementById('newClassShow').value !== 'false';
                 const editingId    = document.getElementById('editingClassId').value;
                 const note         = document.getElementById('newClassFormNote');
 
                 if (!name)               { note.textContent = 'Please enter a class name.'; return; }
                 if (!type)               { note.textContent = 'Please enter a class type.'; return; }
                 if (!duration || duration <= 0) { note.textContent = 'Please enter a valid duration.'; return; }
+                if (priceMvr !== null && (isNaN(priceMvr) || priceMvr < 0)) { note.textContent = 'Please enter a valid price, or leave it empty.'; return; }
 
                 if (editingId) {
                     // ── UPDATE existing class ──
@@ -4791,11 +4843,13 @@
                         cls.durationMin = duration;
                         cls.maxSize     = maxSize;
                         cls.colorKey    = colorKey;
+                        cls.priceMvr    = priceMvr;
+                        cls.showOnWebsite = showOnWebsite;
                         cls.fixed       = newClassFixedValue;
                     }
                 } else {
                     // ── CREATE new class ──
-                    let baseId = name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    let baseId = (name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'class').slice(0, 50);
                     let newId = baseId;
                     let suffix = 2;
                     while (classes.some(c => c.id === newId)) { newId = baseId + '-' + suffix; suffix++; }
@@ -4806,6 +4860,7 @@
                         audience, type, colorKey,
                         durationMin: duration,
                         maxSize, room,
+                        priceMvr, showOnWebsite,
                         active: true
                     });
                 }
@@ -5815,6 +5870,49 @@
                     });
                 });
             }
+
+            // ══════════════════════════════════════════════════
+            // STUDIO DATA ARRIVED OR CHANGED (site-studio.js)
+            // The rooms, tracks, instructors, classes and class times now
+            // come from the database, so every screen built from them is
+            // drawn again.
+            // ══════════════════════════════════════════════════
+            function buildAdultEnrolGrid() {
+                if (!window.FLO || !FLO.studio || !FLO.studio.live) return;   // keep the built-in sample grid
+                const tt = document.querySelector('#enrol-adult .timetable');
+                if (!tt) return;
+                const built = FLO.studio.timetableHTML();
+                if (!built.days) {
+                    tt.innerHTML = '<div class="tt-cell tt-empty" style="grid-column:1 / -1;padding:24px;">No classes are scheduled yet.</div>';
+                    tt.style.gridTemplateColumns = '1fr';
+                } else {
+                    tt.innerHTML = built.html;
+                    tt.style.gridTemplateColumns = '80px repeat(' + built.days + ', 1fr)';
+                }
+                // Keep selections that still exist; drop the rest.
+                Object.keys(enrolment).forEach(function(id) {
+                    const still = Array.from(tt.querySelectorAll('.tt-slot.available')).find(function(b) { return getSlotId(b) === id; });
+                    if (still) { still.classList.remove('available'); still.classList.add('selected'); still.querySelector('.tt-slot-meta').textContent = 'Selected'; }
+                    else { delete enrolment[id]; }
+                });
+                wireTimetableSlots();
+                updateEnrolSidebar();
+                buildMobileSchedule();
+            }
+
+            document.addEventListener('flo:studio', function() {
+                [
+                    buildConfigRoomList, buildConfigTrackList, refreshRoomDropdowns,
+                    buildAdminInstructorList,
+                    function() { buildAdminClassList('adult', 'adminClassListAdult'); },
+                    function() { buildAdminClassList('kids', 'adminClassListKids'); },
+                    buildAdminProgramList, buildAdminDashboardStats, buildAdultEnrolGrid,
+                    function() { fullScheduleBuilt = false; }
+                ].forEach(function(fn) {
+                    try { fn(); } catch (err) { console.error('FLO studio refresh:', err); }
+                });
+            });
+            buildAdultEnrolGrid();     // a cached copy may already be loaded
 
             document.querySelectorAll('.class-card').forEach(function(card) {
                 var el = card.querySelector('.class-lottie');

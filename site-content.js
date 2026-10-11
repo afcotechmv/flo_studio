@@ -58,6 +58,7 @@
       "cards": [
         {
           "id": "class-flow",
+          "classId": "flow",
           "icon": "images/class-icons/flow.png",
           "name": "Flow",
           "type": "Vinyasa Yoga",
@@ -95,6 +96,7 @@
         },
         {
           "id": "class-pulse",
+          "classId": "pulse",
           "icon": "images/class-icons/pulse.png",
           "name": "Pulse",
           "type": "Barre",
@@ -128,6 +130,7 @@
         },
         {
           "id": "class-soar",
+          "classId": "soar",
           "icon": "images/class-icons/soar.png",
           "name": "Soar",
           "type": "Aerial Hammock",
@@ -161,6 +164,7 @@
         },
         {
           "id": "class-sculpt",
+          "classId": "sculpt",
           "icon": "images/class-icons/sculpt.png",
           "name": "Sculpt",
           "type": "Mat Pilates",
@@ -194,6 +198,7 @@
         },
         {
           "id": "class-reform",
+          "classId": "reform",
           "icon": "images/class-icons/reform.png",
           "name": "Reform",
           "type": "Reformer Pilates",
@@ -231,6 +236,7 @@
         },
         {
           "id": "class-reboot",
+          "classId": "reboot",
           "icon": "images/class-icons/reboot.png",
           "name": "ReBoot",
           "type": "Indoor Bootcamp",
@@ -264,6 +270,7 @@
         },
         {
           "id": "class-transform",
+          "classId": "transform",
           "icon": "images/class-icons/transform.png",
           "name": "Transform",
           "type": "Cadillac Pilates",
@@ -293,6 +300,7 @@
         },
         {
           "id": "class-connect",
+          "classId": "connect",
           "icon": "images/class-icons/connect.png",
           "name": "Connect",
           "type": "Partner Stretch",
@@ -322,6 +330,7 @@
         },
         {
           "id": "class-reset",
+          "classId": "reset",
           "icon": "images/class-icons/reset.png",
           "name": "Reset",
           "type": "Meditation & Breathwork",
@@ -1039,7 +1048,9 @@
       waitlist: c.waitlist === true,
       highlight: c.highlight === true,
       hidden: c.hidden === true,
-      groupId: str(c.groupId, 40, '')
+      groupId: str(c.groupId, 40, ''),
+      // The studio class this card is tied to (see site-studio.js); '' = a card written by hand.
+      classId: str(c.classId, 60, '')
     };
   }
 
@@ -1939,8 +1950,10 @@
     if (sec) sec.innerHTML = FLO.storyHTML(w.story, w);
   }
 
-  FLO.applyWebsite = function (w) {
+  FLO.applyWebsite = function (w0) {
     try {
+      // Class cards take their name and times from the real class schedule.
+      var w = (FLO.studio && FLO.studio.resolveWebsite) ? FLO.studio.resolveWebsite(w0) : w0;
       applyOrderAndVisibility(w);
       applyHero(w);
       applyClasses(w);
@@ -2000,6 +2013,12 @@
     FLO.applyWebsite(merged);
     return { ok: true };
   };
+
+  // When the class schedule changes (loaded, or edited by the administrator),
+  // redraw the page so the class cards and the numbers row follow.
+  document.addEventListener('flo:studio', function () {
+    if (FLO.website) FLO.applyWebsite(FLO.website);
+  });
 
   /* ── Start ──────────────────────────────────────────── */
   FLO.loadWebsite(true);

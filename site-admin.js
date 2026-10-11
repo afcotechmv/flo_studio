@@ -327,7 +327,52 @@
         groups: FLO.clone(src.groups || []),
         groupsOn: src.groupsOn === true
       };
+      // Cards saved before classes were connected are matched to their class by
+      // name here, so that pressing Save changes stores the link for good.
+      if (activeTab === 'classes' && studioLive()) {
+        draft.cards.forEach(function (c) {
+          if (c.classId) return;
+          var l = FLO.studio.linkFor(c);
+          if (l && l !== 'gone') c.classId = l.id;
+        });
+      }
     }
+  }
+
+  /* Link between a website card and a studio class (Classes tab only) */
+  function studioLive() { return !!(FLO.studio && FLO.studio.live); }
+  function byClassId(id) {
+    var list = studioLive() ? FLO.studio.adultClasses() : [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  function linkBadge(c) {
+    if (activeTab !== 'classes' || !studioLive()) return '';
+    var l = FLO.studio.linkFor(c);
+    if (l === 'gone') return '<span class="wsite-badge wsite-badge--warn">Class deleted: hidden on the page</span>';
+    if (!l) return '<span class="wsite-badge">Written by hand</span>';
+    var off = l.active === false || l.showOnWebsite === false;
+    return '<span class="wsite-badge ' + (off ? 'wsite-badge--warn' : 'wsite-badge--link') + '">' +
+      (off ? 'Linked to ' + esc(l.name) + ', switched off: hidden' : 'Linked to ' + esc(l.name)) + '</span>';
+  }
+
+  function unlistedHTML() {
+    if (activeTab !== 'classes' || !studioLive()) return '';
+    var list = FLO.studio.unlisted(draft.cards);
+    if (!list.length) return '';
+    return '<div class="wsite-unlisted">' +
+      '<h4 class="wsite-subhead">Classes without a card (' + list.length + ')</h4>' +
+      '<p class="wsite-hint">These classes are live and already appear on the public page with basic details (name, style, times). ' +
+        'Create a card to add a description, icon, price text or a group.</p>' +
+      list.map(function (cl) {
+        return '<div class="wsite-unlisted-row" data-ucls="' + esc(cl.id) + '">' +
+          '<span class="wsite-crow-name">' + esc(cl.name) + '</span>' +
+          '<span class="wsite-crow-type">' + esc(cl.type || '') + '</span>' +
+          '<button type="button" class="wsite-small" data-ucreate>Create card</button>' +
+        '</div>';
+      }).join('') +
+    '</div>';
   }
 
   /* Display groups (Classes tab only) */
@@ -423,7 +468,8 @@
       var badges =
         (cfg().hasHighlight && c.highlight ? '<span class="wsite-badge wsite-badge--accent">Highlighted</span>' : '') +
         (c.waitlist ? '<span class="wsite-badge">Waitlist button</span>' : '') +
-        (c.hidden ? '<span class="wsite-badge">Hidden</span>' : '');
+        (c.hidden ? '<span class="wsite-badge">Hidden</span>' : '') +
+        linkBadge(c);
       return '<li class="wsite-crow' + (c.hidden ? ' is-hidden' : '') + '" data-id="' + esc(c.id) + '">' +
         thumbHTML(c) +
         '<span class="wsite-crow-main">' +
@@ -463,6 +509,7 @@
         (rows
           ? '<ul class="wsite-clist">' + rows + '</ul>'
           : '<p class="admin-empty-note">No cards yet. Use \u201CAdd ' + esc(cfg().noun) + '\u201D to create one.</p>') +
+        unlistedHTML() +
         actions('wc') +
       '</div>';
 
@@ -487,6 +534,23 @@
     });
 
     if (usesGroups()) wireGroups(touch);
+
+    panel.querySelectorAll('[data-ucreate]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var cl = byClassId(btn.closest('[data-ucls]').getAttribute('data-ucls'));
+        if (!cl) return;
+        var c = newCard();
+        c.classId = cl.id;
+        c.name = cl.name;
+        c.type = cl.type || '';
+        c.meta = cl.durationMin ? [cl.durationMin + ' min session'] : [];
+        draft.cards.push(c);
+        draft.view = 'edit';
+        draft.editId = c.id;
+        dirty = true;
+        renderClassEditor();
+      });
+    });
 
     var listEl = panel.querySelector('.wsite-clist');
     if (listEl) {
@@ -605,7 +669,7 @@
   }
 
   function classPreviewCard(c) {
-    var pc = FLO.clone(c);
+    var pc = FLO.clone(activeTab === 'classes' && studioLive() ? FLO.studio.resolveCard(c) : c);
     pc.slots = pc.slots.filter(function (s) { return s.text.trim(); });
     pc.buttonLink = '#';
     return pc;
@@ -615,6 +679,18 @@
     var c = findCard(draft.editId);
     if (!c) { draft.view = 'list'; return renderClassList(); }
     var hasIcon = !!FLO.safeImageUrl(c.icon);
+    var linked = activeTab === 'classes' && studioLive() && c.classId ? byClassId(c.classId) : null;
+    var linkField = '';
+    if (activeTab === 'classes' && studioLive()) {
+      linkField = field('Linked class',
+        'Ties this card to a class under Classes in the main menu. The name and the time slots then come from that class and follow any change to its schedule.',
+        '<select class="admin-panel-select" id="wce-class"><option value="">None: a card written by hand</option>' +
+          FLO.studio.adultClasses().map(function (cl) {
+            return '<option value="' + esc(cl.id) + '"' + (cl.id === c.classId ? ' selected' : '') + '>' + esc(cl.name) +
+              (cl.active === false ? ' (inactive)' : '') + '</option>';
+          }).join('') + '</select>');
+    }
+    var derived = linked ? FLO.studio.deriveSlots(linked) : null;
 
     var slotRows = c.slots.map(function (s, i) {
       return '<div class="wsite-slot-row" data-i="' + i + '">' +
@@ -634,9 +710,11 @@
         '<div class="wsite-grid">' +
           '<div class="wsite-form">' +
             '<div class="wsite-two">' +
-              field(cfg().nameLabel, '', '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(c.name) + '">') +
+              field(cfg().nameLabel, linked ? 'Taken from the linked class. Rename it under Classes.' : '',
+                '<input type="text" class="admin-panel-input" id="wce-name" maxlength="60" value="' + esc(linked ? linked.name : c.name) + '"' + (linked ? ' readonly' : '') + '>') +
               field('Style', 'Shown in small capitals, e.g. Vinyasa Yoga.', '<input type="text" class="admin-panel-input" id="wce-type" maxlength="80" value="' + esc(c.type) + '">') +
             '</div>' +
+            linkField +
             field('Description', '', '<textarea class="admin-panel-input" id="wce-desc" rows="3" maxlength="400">' + esc(c.desc) + '</textarea>') +
             (usesGroups() && draft.groups.length
               ? field('Group', 'The heading this class appears under when groups are shown on the public page.',
@@ -660,13 +738,22 @@
               field(cfg().metaLabel, cfg().metaHint, '<textarea class="admin-panel-input" id="wce-meta" rows="3" maxlength="500">' + esc(c.meta.join('\n')) + '</textarea>') +
             '</div>' +
 
-            '<div class="wsite-field">' +
-              '<label class="wsite-label" for="wce-slotslabel">Time slots</label>' +
-              '<p class="wsite-hint">Shown on the card as written. Mark a slot Full to show it greyed out.</p>' +
-              '<input type="text" class="admin-panel-input" id="wce-slotslabel" maxlength="60" value="' + esc(c.slotsLabel) + '" placeholder="Heading, e.g. Available slots">' +
-              '<div class="wsite-slots" id="wce-slots">' + slotRows + '</div>' +
-              '<button type="button" class="wsite-small" id="wce-addslot"' + (c.slots.length >= 12 ? ' disabled' : '') + '>+ Add slot</button>' +
-            '</div>' +
+            (linked
+              ? '<div class="wsite-field">' +
+                  '<label class="wsite-label">Time slots</label>' +
+                  '<p class="wsite-hint">These come from the schedule of ' + esc(linked.name) + ' and update by themselves. ' +
+                    'To change them, open Classes in the main menu and press Schedule on that class. A slot marked Full there is greyed out here.</p>' +
+                  '<div class="wsite-readslots">' + (derived.slots.length
+                    ? derived.slots.map(function (sl) { return '<span class="wsite-readslot' + (sl.status === 'full' ? ' is-full' : '') + '">' + esc(sl.text) + '</span>'; }).join('')
+                    : '<span class="wsite-hint">No times yet. The card shows \u201C' + esc(derived.label) + '\u201D.</span>') + '</div>' +
+                '</div>'
+              : '<div class="wsite-field">' +
+                  '<label class="wsite-label" for="wce-slotslabel">Time slots</label>' +
+                  '<p class="wsite-hint">Shown on the card as written. Mark a slot Full to show it greyed out.</p>' +
+                  '<input type="text" class="admin-panel-input" id="wce-slotslabel" maxlength="60" value="' + esc(c.slotsLabel) + '" placeholder="Heading, e.g. Available slots">' +
+                  '<div class="wsite-slots" id="wce-slots">' + slotRows + '</div>' +
+                  '<button type="button" class="wsite-small" id="wce-addslot"' + (c.slots.length >= 12 ? ' disabled' : '') + '>+ Add slot</button>' +
+                '</div>') +
 
             '<div class="wsite-two">' +
               field('Button text', 'Leave empty to hide the button.', '<input type="text" class="admin-panel-input" id="wce-btn" maxlength="40" value="' + esc(c.buttonLabel) + '">') +
@@ -718,7 +805,15 @@
     bind('#wce-meta', function (v) {
       c.meta = v.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 8);
     });
-    bind('#wce-slotslabel', function (v) { c.slotsLabel = v; });
+    if (panel.querySelector('#wce-slotslabel')) bind('#wce-slotslabel', function (v) { c.slotsLabel = v; });
+    var lk = panel.querySelector('#wce-class');
+    if (lk) lk.addEventListener('change', function (e) {
+      var cl = byClassId(e.target.value);
+      c.classId = cl ? cl.id : '';
+      if (cl) { c.name = cl.name; if (!c.type) c.type = cl.type || ''; }
+      dirty = true;
+      renderClassEditor();
+    });
     bind('#wce-btn', function (v) { c.buttonLabel = v; });
     bind('#wce-link', function (v) { c.buttonLink = v; });
     panel.querySelector('#wce-waitlist').addEventListener('change', function (e) { c.waitlist = e.target.checked; touch(); });
@@ -728,8 +823,8 @@
     var grp = panel.querySelector('#wce-group');
     if (grp) grp.addEventListener('change', function (e) { c.groupId = e.target.value; touch(); });
 
-    // Slots
-    var slotsEl = panel.querySelector('#wce-slots');
+    // Slots (only on a card that is written by hand)
+    var slotsEl = panel.querySelector('#wce-slots') || document.createElement('div');
     function slotIndex(el) { return parseInt(el.closest('[data-i]').getAttribute('data-i'), 10); }
     slotsEl.addEventListener('input', function (e) {
       if (!e.target.matches('[data-slot-text]')) return;
@@ -748,7 +843,8 @@
       dirty = true;
       renderClassEditor();
     });
-    panel.querySelector('#wce-addslot').addEventListener('click', function () {
+    var addSlot = panel.querySelector('#wce-addslot');
+    if (addSlot) addSlot.addEventListener('click', function () {
       c.slots.push({ text: '', status: 'available' });
       dirty = true;
       renderClassEditor();
@@ -814,6 +910,7 @@
       return {
         id: c.id, icon: c.icon, name: c.name.trim(), type: c.type.trim(), desc: c.desc.trim(), price: c.price.trim(),
         groupId: usesGroups() ? (c.groupId || '') : '',
+        classId: activeTab === 'classes' ? (c.classId || '') : '',
         meta: c.meta, slotsLabel: c.slotsLabel.trim(),
         slots: c.slots.map(function (s) { return { text: s.text.trim(), status: s.status }; }).filter(function (s) { return s.text; }),
         buttonLabel: c.buttonLabel.trim(), buttonLink: String(c.buttonLink || '').trim() || '#',

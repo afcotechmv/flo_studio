@@ -6576,3 +6576,74 @@ body.flo-lb-open { overflow: hidden; }
     .events-tabs { gap: 8px; }
     .events-tab { padding: 9px 16px; letter-spacing: 1px; }
 }
+
+/* ─────────────────────────────────────────────
+   STUDIO DATA (site-studio.js): save status, class schedule editor,
+   and the class link on the Website cards
+   ───────────────────────────────────────────── */
+.studio-sync {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 1200;
+    max-width: min(420px, calc(100vw - 32px));
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #e8e8e4;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    font-size: 13px;
+    color: var(--text-mid);
+}
+.studio-sync[hidden] { display: none; }
+.studio-sync--ok { border-color: var(--teal); color: var(--teal-dark); }
+.studio-sync--err { border-color: var(--tangerine); color: var(--tangerine); background: var(--tangerine-light); }
+.studio-sync button {
+    margin-left: 8px;
+    padding: 3px 10px;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.studio-sched { display: flex; flex-direction: column; gap: 14px; margin: 14px 0; max-height: 46vh; overflow-y: auto; padding-right: 2px; }
+.studio-sched-row {
+    display: grid;
+    grid-template-columns: 90px 140px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+}
+.studio-sched-row.is-off { opacity: 0.55; }
+.studio-sched-row .settings-select,
+.studio-sched-time { width: 100%; min-width: 0; box-sizing: border-box; }
+.studio-sched-time {
+    padding: 10px 12px;
+    border: 1px solid #e8e8e4;
+    border-radius: 8px;
+    font: inherit;
+    background: #fff;
+}
+.studio-sched-tail { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.studio-sched-check { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text-mid); white-space: nowrap; }
+.studio-sched-add { border-top: 1px solid #e8e8e4; padding-top: 12px; margin-top: 6px; }
+.studio-sched-addlabel { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-light); margin: 0 0 8px; text-align: center; }
+.studio-sched-add .studio-sched-row > button { grid-column: 1 / -1; justify-self: start; }
+.studio-sched-foot { font-size: 12px; color: var(--text-light); margin: 10px 0 0; text-align: center; }
+
+.wsite-badge--warn { background: #fdecea; color: #b3261e; }
+.wsite-badge--link { background: var(--teal-light); color: var(--teal-dark); }
+.wsite-unlisted { margin-top: 24px; padding-top: 8px; border-top: 1px solid #e8e8e4; }
+.wsite-unlisted-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
+.wsite-unlisted-row .wsite-crow-name { min-width: 120px; }
+.wsite-readslots { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.wsite-readslot { padding: 4px 10px; border-radius: 12px; background: var(--teal-light); color: var(--teal-dark); font-size: 12px; }
+.wsite-readslot.is-full { background: #f0f0ec; color: var(--text-light); text-decoration: line-through; }
+
+@media (max-width: 768px) {
+    .studio-sched-row { grid-template-columns: 88px minmax(0, 1fr); }
+    .studio-sched-row > .settings-select:nth-child(3) { grid-column: 1 / -1; }
+    .studio-sync { left: 8px; right: 8px; bottom: 8px; max-width: none; }
+}
